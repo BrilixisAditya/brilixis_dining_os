@@ -1,0 +1,38 @@
+/* Custom Utilities & Helper Classes */
+
+/* Hide scrollbars */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Glassmorphic surface */
+.brilixis-glass {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Shadow utilities using tokens */
+.shadow-brilixis-sm {
+  box-shadow: var(--shadow-sm);
+}
+
+.shadow-brilixis-md {
+  box-shadow: var(--shadow-md);
+}
+
+.shadow-brilixis-lg {
+  box-shadow: var(--shadow-lg);
+}
+
+.shadow-brilixis-glow {
+  box-shadow: var(--shadow-glow);
+}
+
+.shadow-brilixis-teal {
+  box-shadow: var(--shadow-teal);
+}

@@ -1,0 +1,6 @@
+{
+  "name": "Brilixis Dining OS",
+  "description": "A premium, modern QR-based dining operating system and tableside management platform with seamless ordering, real-time POS analytics, and luxury guest experience.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

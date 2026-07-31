@@ -1,0 +1,156 @@
+/* Reusable Component Classes for Brilixis Dining OS */
+
+@layer components {
+  /* Buttons */
+  .btn-primary {
+    @apply bg-[#E76F51] hover:bg-[#D95D3F] text-white font-display font-bold rounded-2xl transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2;
+    box-shadow: var(--shadow-glow);
+  }
+
+  .btn-secondary {
+    @apply bg-[#F4A261] hover:bg-[#e79250] text-white font-display font-bold rounded-2xl transition-all duration-200 cursor-pointer flex items-center justify-center gap-2;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .btn-dark {
+    @apply bg-[#2D2D2D] hover:bg-black text-white font-display font-bold rounded-2xl transition-all duration-200 cursor-pointer flex items-center justify-center gap-2;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .btn-outline {
+    @apply bg-white hover:bg-neutral-50 text-[#2D2D2D] border border-[#ECE7E1] font-display font-bold rounded-2xl transition-all duration-200 cursor-pointer flex items-center justify-center gap-2;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .btn-danger {
+    @apply bg-rose-600 hover:bg-rose-700 text-white font-display font-bold rounded-2xl transition-all duration-200 cursor-pointer flex items-center justify-center gap-2;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .btn-icon {
+    @apply p-2 rounded-xl text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 transition-colors cursor-pointer flex items-center justify-center;
+  }
+
+  /* Form Controls */
+  .form-label {
+    @apply text-[10px] font-mono font-bold text-[#6B7280] uppercase block mb-1 tracking-wider;
+  }
+
+  .input-field {
+    @apply w-full text-xs bg-[#FFFDF8] border border-[#ECE7E1] rounded-xl px-3 py-2.5 text-[#2D2D2D] focus:outline-none focus:border-[#E76F51] transition-colors;
+  }
+
+  .select-field {
+    @apply w-full text-xs bg-[#FFFDF8] border border-[#ECE7E1] rounded-xl px-3 py-2.5 text-[#2D2D2D] focus:outline-none focus:border-[#E76F51] transition-colors cursor-pointer;
+  }
+
+  /* Cards & Containers */
+  .card-surface {
+    @apply bg-white border border-[#ECE7E1] rounded-2xl p-6;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .dashboard-card {
+    @apply bg-white border border-[#E8E5DD] rounded-[2.5rem] p-6;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .login-panel {
+    @apply w-full max-w-md bg-white border border-[#ECE7E1] rounded-2xl p-6 relative overflow-hidden;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .menu-card {
+    @apply bg-white border border-[#ECE7E1] rounded-3xl p-4 transition-all duration-300 flex flex-col justify-between relative overflow-hidden;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .order-card {
+    @apply bg-white border border-[#ECE7E1] rounded-2xl p-4 hover:border-[#E76F51]/30 transition-all;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .analytics-card {
+    @apply bg-white border border-[#ECE7E1] rounded-2xl p-5 flex flex-col justify-between;
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* Modals */
+  .modal-overlay {
+    @apply fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto;
+  }
+
+  .modal-content {
+    @apply bg-white border border-[#ECE7E1] rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4 my-8 relative;
+  }
+
+  .modal-header {
+    @apply flex justify-between items-center pb-3 border-b border-[#ECE7E1];
+  }
+
+  .modal-title {
+    @apply text-base font-display font-bold text-[#2D2D2D];
+  }
+
+  /* Badges & Chips */
+  .status-badge {
+    @apply text-[10px] font-mono font-bold px-2.5 py-1 rounded-full uppercase inline-flex items-center gap-1;
+  }
+
+  .category-chip {
+    @apply px-4 py-2 rounded-2xl font-display font-bold text-xs transition-all cursor-pointer whitespace-nowrap;
+  }
+
+  .category-chip-active {
+    @apply bg-[#2D2D2D] text-white;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .category-chip-inactive {
+    @apply bg-white border border-[#ECE7E1] text-[#6B7280] hover:border-[#2D2D2D] hover:text-[#2D2D2D];
+  }
+
+  .badge-pill {
+    @apply text-[10px] font-mono font-bold px-2 py-0.5 rounded-md uppercase tracking-wide;
+  }
+
+  /* Tables */
+  .table-container {
+    @apply w-full overflow-x-auto border border-[#ECE7E1] rounded-2xl bg-white;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .table-header {
+    @apply bg-[#FFFDF8] text-[10px] font-mono font-bold text-[#6B7280] uppercase tracking-wider px-4 py-3 border-b border-[#ECE7E1] text-left;
+  }
+
+  .table-row {
+    @apply border-b border-[#ECE7E1] hover:bg-[#FFFDF8]/50 transition-colors text-xs text-[#2D2D2D];
+  }
+
+  .table-cell {
+    @apply px-4 py-3 align-middle;
+  }
+
+  /* Navigation & Toolbar */
+  .nav-bar {
+    @apply sticky top-0 z-40 bg-[#FFFDF8]/90 backdrop-blur-md border-b border-[#ECE7E1] px-4 py-3 flex items-center justify-between transition-all;
+  }
+
+  .sidebar-container {
+    @apply fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-[#ECE7E1] p-5 flex flex-col justify-between shadow-xl;
+  }
+
+  .nav-item {
+    @apply flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-display font-bold transition-all cursor-pointer;
+  }
+
+  .nav-item-active {
+    @apply bg-[#E76F51] text-white;
+    box-shadow: var(--shadow-glow);
+  }
+
+  .nav-item-inactive {
+    @apply text-[#6B7280] hover:bg-[#FFFDF8] hover:text-[#2D2D2D];
+  }
+}
