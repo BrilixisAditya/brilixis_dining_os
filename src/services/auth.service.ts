@@ -16,11 +16,33 @@ export class AuthService {
     const { adminId, password } = credentials;
     const cleanId = adminId.trim().toLowerCase();
 
-    if ((cleanId === 'admin' && password === 'admin123') || password.length >= 4) {
+    if ((cleanId === 'admin' && password === 'admin123')) {
       return {
         success: true,
         token: `jwt_token_admin_${Date.now()}`,
-        message: 'Admin authenticated successfully.'
+        message: 'Admin authenticated successfully.',
+        role: 'owner'
+      };
+    }else if(cleanId === 'admin' && password === 'admin124'){
+      return {
+        success: true,
+        token: `jwt_token_admin_${Date.now()}`,
+        message: 'Admin authenticated successfully.',
+        role: 'manager'
+      };
+    }else if(cleanId === 'admin' && password === 'admin125'){
+      return {
+        success: true,
+        token: `jwt_token_admin_${Date.now()}`,
+        message: 'Admin authenticated successfully.',
+        role: 'waiter'
+      };
+    }else if(cleanId === 'admin' && password === 'admin126'){
+      return {
+        success: true,
+        token: `jwt_token_admin_${Date.now()}`,
+        message: 'Admin authenticated successfully.',
+        role: 'kitchen'
       };
     }
 

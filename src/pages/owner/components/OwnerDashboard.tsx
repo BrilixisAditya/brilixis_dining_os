@@ -4,6 +4,7 @@ import { useApp } from '../../../context/AppContext';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell } from 'recharts';
 import useOrders from '@/src/hooks/useOrders';
 import { WaiterRequest } from '@/src/types/types';
+import { useNavigate } from 'react-router-dom';
 
 export const OwnerDashboard: React.FC = () => {
   // const { allOrders, setActiveRole, allWaiterRequests } = useApp();
@@ -11,8 +12,10 @@ export const OwnerDashboard: React.FC = () => {
 
   const [allWaiterRequests, setAllWaiterRequest] = useState<WaiterRequest[]>([]);
 
+  const navigate = useNavigate();
+
   const handleLogout = () => {
-    // setActiveRole('login');
+    navigate('/auth/login');
   };
 
   // Compile calculations safely from live + historical data

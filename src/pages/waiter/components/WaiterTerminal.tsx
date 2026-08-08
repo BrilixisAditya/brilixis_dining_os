@@ -8,6 +8,7 @@ import { useApp } from '../../../context/AppContext';
 import { MENU_ITEMS, MenuItem } from '../../../types/menuData';
 import { OrderItem, WaiterRequest } from '../../../types/types';
 import useOrders from '@/src/hooks/useOrders';
+import { useNavigate } from 'react-router-dom';
 
 export const WaiterTerminal: React.FC = () => {
 
@@ -36,9 +37,12 @@ export const WaiterTerminal: React.FC = () => {
   // Modifying active single dish state (Item Selector Overlay inside Waiter Portal)
   const [modifyingItemIdx, setModifyingItemIdx] = useState<number | null>(null);
 
+  const navigate = useNavigate();
+
   // Return to role selection terminal
   const handleExit = () => {
-    setActiveRole('login');
+    // TODO: logout logic and API call will be written here
+    navigate('/auth/login');
   };
 
   // Get active order associated with the selected Table

@@ -122,7 +122,6 @@ export default function CustomerPage(): React.ReactElement {
       {/* Luxury Navigation Header */}
       <Navbar
   tableNumber={tableNumber ?? 0}
-  isGuest={user === null}
   onOpenCart={() => setIsCartOpen(true)}
   onOpenSidebar={() => setIsMobileSidebarOpen(true)}
   onOpenTableSwitcher={() => setIsTableSwitcherOpen(true)}

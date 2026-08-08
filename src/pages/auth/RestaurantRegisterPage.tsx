@@ -1,95 +1,107 @@
-import React, { useState } from 'react';
-import { 
-  Building2, 
-  CheckCircle2, 
-  Loader2, 
-  ArrowLeft, 
-  ArrowRight, 
-  Sparkles, 
-  MailCheck, 
-  ShieldAlert, 
-  FileText, 
-  MapPin, 
-  Users 
-} from 'lucide-react';
-import { RestaurantRegisterPayload, INDIAN_STATES } from '../../../types/AuthTypes';
-import { AuthService } from '../../../services/auth.service';
+import React, { useState } from "react";
+import {
+  Building2,
+  CheckCircle2,
+  Loader2,
+  ArrowLeft,
+  ArrowRight,
+  Sparkles,
+  MailCheck,
+  ShieldAlert,
+  FileText,
+  MapPin,
+  Users,
+} from "lucide-react";
+import {
+  RestaurantRegisterPayload,
+  INDIAN_STATES,
+} from "../../types/AuthTypes";
+import { AuthService } from "../../services/auth.service";
+import { useRestaurant } from "@/src/context/RestaurantContext";
+import { useNavigate } from "react-router-dom";
 
-interface RestaurantRegisterFormProps {
-  onSuccess: (registeredData: RestaurantRegisterPayload) => void;
-  onReturnToLogin: () => void;
-}
 
-export const RestaurantRegisterForm: React.FC<RestaurantRegisterFormProps> = ({
-  onSuccess,
-  onReturnToLogin,
-}) => {
+
+// ⚠️ THIS REGISTER FORM IS FOR RESTAURANT AND MERCHANT OWNERS WHO WANTS TO REGISTER THERE BUSINESS
+
+export const RestaurantRegisterPage = () => {
   const [currentStep, setCurrentStep] = useState<number>(1);
   const totalSteps = 4;
 
   const [formData, setFormData] = useState<RestaurantRegisterPayload>({
-    restaurantName: '',
-    ownerName: '',
-    email: '',
-    phone: '',
-    gstNumber: '',
-    fssaiNumber: '',
-    address: '',
-    city: '',
-    state: 'Maharashtra',
-    stateCode: '27',
-    pincode: '',
-    country: 'India',
-    employeeRange: '6-15 employees',
+    restaurantName: "",
+    ownerName: "",
+    email: "",
+    phone: "",
+    gstNumber: "",
+    fssaiNumber: "",
+    address: "",
+    city: "",
+    state: "Maharashtra",
+    stateCode: "27",
+    pincode: "",
+    country: "India",
+    employeeRange: "6-15 employees",
     totalTables: 12,
-    cuisineType: 'Multi-Cuisine / Fine Dining',
-    invoicePrefix: 'INV-2026',
+    cuisineType: "Multi-Cuisine / Fine Dining",
+    invoicePrefix: "INV-2026",
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const { updateRestaurantGstProfile } = useRestaurant();
+
+  const navigate = useNavigate();
+
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >,
+  ) => {
     const { name, value } = e.target;
-    
-    if (name === 'state') {
+
+    if (name === "state") {
       const selectedStateObj = INDIAN_STATES.find((s) => s.name === value);
       setFormData((prev) => ({
         ...prev,
         state: value,
-        stateCode: selectedStateObj ? selectedStateObj.code : '27',
+        stateCode: selectedStateObj ? selectedStateObj.code : "27",
       }));
     } else {
       setFormData((prev) => ({
         ...prev,
-        [name]: name === 'totalTables' ? Math.max(1, parseInt(value, 10) || 1) : value,
+        [name]:
+          name === "totalTables"
+            ? Math.max(1, parseInt(value, 10) || 1)
+            : value,
       }));
     }
   };
 
   const validateCurrentStep = (): boolean => {
-    setErrorMessage('');
+    setErrorMessage("");
     if (currentStep === 1) {
       if (!formData.restaurantName.trim()) {
-        setErrorMessage('Please enter your Restaurant Name.');
+        setErrorMessage("Please enter your Restaurant Name.");
         return false;
       }
       if (!formData.ownerName.trim()) {
-        setErrorMessage('Please enter the Owner / Proprietor Name.');
+        setErrorMessage("Please enter the Owner / Proprietor Name.");
         return false;
       }
-      if (!formData.email.trim() || !formData.email.includes('@')) {
-        setErrorMessage('Please enter a valid Business Email Address.');
+      if (!formData.email.trim() || !formData.email.includes("@")) {
+        setErrorMessage("Please enter a valid Business Email Address.");
         return false;
       }
       if (!formData.phone.trim()) {
-        setErrorMessage('Please enter a valid Contact Phone Number.');
+        setErrorMessage("Please enter a valid Contact Phone Number.");
         return false;
       }
     } else if (currentStep === 3) {
       if (!formData.city.trim()) {
-        setErrorMessage('Please specify your City.');
+        setErrorMessage("Please specify your City.");
         return false;
       }
     }
@@ -111,7 +123,7 @@ export const RestaurantRegisterForm: React.FC<RestaurantRegisterFormProps> = ({
       e.preventDefault();
       e.stopPropagation();
     }
-    setErrorMessage('');
+    setErrorMessage("");
     setCurrentStep((prev) => Math.max(1, prev - 1));
   };
 
@@ -126,8 +138,8 @@ export const RestaurantRegisterForm: React.FC<RestaurantRegisterFormProps> = ({
 
     if (!validateCurrentStep()) return;
 
-    setErrorMessage('');
-    setSuccessMessage('');
+    setErrorMessage("");
+    setSuccessMessage("");
     setIsSubmitting(true);
 
     try {
@@ -135,30 +147,73 @@ export const RestaurantRegisterForm: React.FC<RestaurantRegisterFormProps> = ({
 
       if (response.success) {
         setSuccessMessage(
-          response.message || 
-          `Registration submitted! Login credentials & terminal PINs will be issued to ${formData.email}.`
+          response.message ||
+            `Registration submitted! Login credentials & terminal PINs will be issued to ${formData.email}.`,
         );
         setTimeout(() => {
-          onSuccess(formData);
+          const payload = formData;
+          updateRestaurantGstProfile({
+            restaurantName: payload.restaurantName,
+            legalBusinessName: payload.ownerName,
+            gstin: payload.gstNumber || "27AAPCH1234F1Z5",
+            fssaiNumber: payload.fssaiNumber || "11521001000123",
+            address: payload.address,
+            state: payload.state,
+            stateCode: payload.stateCode || "27",
+            pincode: payload.pincode,
+            phoneNumber: payload.phone,
+            email: payload.email,
+            invoicePrefix: payload.invoicePrefix || "INV-2026",
+            financialYear: "2026-27",
+            taxConfig: "BOTH",
+          });
+          setTimeout(()=>{
+            return navigate('/auth/login');
+          }, 2000);
         }, 2200);
       } else {
-        setErrorMessage(response.message || 'Registration failed.');
+        setErrorMessage(response.message || "Registration failed.");
       }
     } catch (err) {
-      setErrorMessage('Network / Server error during registration.');
+      setErrorMessage("Network / Server error during registration.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const stepsInfo = [
-    { num: 1, label: 'Identity', icon: Sparkles },
-    { num: 2, label: 'Statutory', icon: FileText },
-    { num: 3, label: 'Premises', icon: MapPin },
-    { num: 4, label: 'Capacity', icon: Users },
+    { num: 1, label: "Identity", icon: Sparkles },
+    { num: 2, label: "Statutory", icon: FileText },
+    { num: 3, label: "Premises", icon: MapPin },
+    { num: 4, label: "Capacity", icon: Users },
   ];
 
   return (
+    // subtle ambient glow and brand heading Wrapper Container
+     <div className="min-h-[85vh] flex flex-col items-center justify-start p-2 sm:p-6" id="login-container">
+      <div className="max-w-xl w-full bg-white rounded-3xl border border-[#E8E4DA] p-1.5 sm:p-8 shadow-xl relative overflow-hidden" id="login-panel">
+        {/* Subtle Ambient Glow */}
+        <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-72 h-72 bg-[#E76F51]/10 blur-3xl rounded-full pointer-events-none" />
+
+        {/* Brand Header */}
+        <div className="text-center mb-6 relative">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#E76F51] to-[#F4A261] flex items-center justify-center font-display font-black text-white text-2xl mx-auto shadow-md mb-3">
+            B
+          </div>
+          <span className="text-[11px] font-mono tracking-widest text-[#E76F51] font-bold uppercase block">
+            Brilixis Dining OS • Portal
+          </span>
+          <h2 className="text-xl sm:text-2xl font-display font-bold text-[#1F2226] tracking-tight mt-1 leading-tight">
+            Restaurant Business Onboarding
+          </h2>
+          <p className="text-xs sm:text-sm text-[#5C6168] mt-1 max-w-md mx-auto">
+            Complete food business registration to activate digital tableside ordering & GST billing
+          </p>
+        </div>
+
+       
+
+    {/* onboarding container */}
     <div className="space-y-6 text-left" id="restaurant-register-wizard">
       {/* Onboarding Wizard Stepper Header */}
       <div className="bg-[#FAF8F5] border border-[#E8E4DA] p-3.5 sm:p-4 rounded-2xl">
@@ -196,19 +251,29 @@ export const RestaurantRegisterForm: React.FC<RestaurantRegisterFormProps> = ({
                 disabled={s.num > currentStep}
                 className={`flex flex-col items-center justify-center p-2 rounded-xl text-center transition-all ${
                   isCurrent
-                    ? 'bg-white text-[#E76F51] border border-[#E76F51]/30 shadow-xs font-bold'
+                    ? "bg-white text-[#E76F51] border border-[#E76F51]/30 shadow-xs font-bold"
                     : isCompleted
-                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 cursor-pointer font-bold'
-                    : 'bg-transparent text-neutral-400 opacity-60'
+                      ? "bg-emerald-50 text-emerald-800 border border-emerald-200 cursor-pointer font-bold"
+                      : "bg-transparent text-neutral-400 opacity-60"
                 }`}
               >
                 <div className="flex items-center gap-1">
                   {isCompleted ? (
-                    <CheckCircle2 size={13} className="text-emerald-600 shrink-0" />
+                    <CheckCircle2
+                      size={13}
+                      className="text-emerald-600 shrink-0"
+                    />
                   ) : (
-                    <Icon size={13} className={isCurrent ? 'text-[#E76F51]' : 'text-neutral-400'} />
+                    <Icon
+                      size={13}
+                      className={
+                        isCurrent ? "text-[#E76F51]" : "text-neutral-400"
+                      }
+                    />
                   )}
-                  <span className="text-[10px] sm:text-xs font-display truncate">{s.label}</span>
+                  <span className="text-[10px] sm:text-xs font-display truncate">
+                    {s.label}
+                  </span>
                 </div>
               </button>
             );
@@ -220,7 +285,9 @@ export const RestaurantRegisterForm: React.FC<RestaurantRegisterFormProps> = ({
       <div className="p-3.5 bg-amber-50/90 border border-amber-200 text-amber-900 text-xs rounded-2xl flex items-start gap-2.5">
         <MailCheck size={18} className="text-amber-700 shrink-0 mt-0.5" />
         <p className="text-[11px] leading-relaxed">
-          <strong>Enterprise Verification:</strong> Fill out your restaurant profile below. Credentials and staff PINs will be dispatched to your registered email upon approval.
+          <strong>Enterprise Verification:</strong> Fill out your restaurant
+          profile below. Credentials and staff PINs will be dispatched to your
+          registered email upon approval.
         </p>
       </div>
 
@@ -233,9 +300,14 @@ export const RestaurantRegisterForm: React.FC<RestaurantRegisterFormProps> = ({
 
       {successMessage && (
         <div className="p-4 bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs rounded-2xl leading-relaxed flex items-start gap-3">
-          <CheckCircle2 size={20} className="text-emerald-600 shrink-0 mt-0.5" />
+          <CheckCircle2
+            size={20}
+            className="text-emerald-600 shrink-0 mt-0.5"
+          />
           <div>
-            <strong className="font-bold text-emerald-900 text-xs block mb-0.5">Registration Submitted Successfully!</strong>
+            <strong className="font-bold text-emerald-900 text-xs block mb-0.5">
+              Registration Submitted Successfully!
+            </strong>
             <span>{successMessage}</span>
           </div>
         </div>
@@ -252,7 +324,9 @@ export const RestaurantRegisterForm: React.FC<RestaurantRegisterFormProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="form-label text-xs font-semibold block mb-1">Restaurant Name *</label>
+                <label className="form-label text-xs font-semibold block mb-1">
+                  Restaurant Name *
+                </label>
                 <input
                   type="text"
                   name="restaurantName"
@@ -266,7 +340,9 @@ export const RestaurantRegisterForm: React.FC<RestaurantRegisterFormProps> = ({
               </div>
 
               <div>
-                <label className="form-label text-xs font-semibold block mb-1">Owner / Proprietor Name *</label>
+                <label className="form-label text-xs font-semibold block mb-1">
+                  Owner / Proprietor Name *
+                </label>
                 <input
                   type="text"
                   name="ownerName"
@@ -282,7 +358,9 @@ export const RestaurantRegisterForm: React.FC<RestaurantRegisterFormProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="form-label text-xs font-semibold block mb-1">Business Email Address *</label>
+                <label className="form-label text-xs font-semibold block mb-1">
+                  Business Email Address *
+                </label>
                 <input
                   type="email"
                   name="email"
@@ -296,7 +374,9 @@ export const RestaurantRegisterForm: React.FC<RestaurantRegisterFormProps> = ({
               </div>
 
               <div>
-                <label className="form-label text-xs font-semibold block mb-1">Contact Phone Number *</label>
+                <label className="form-label text-xs font-semibold block mb-1">
+                  Contact Phone Number *
+                </label>
                 <input
                   type="tel"
                   name="phone"
@@ -322,7 +402,9 @@ export const RestaurantRegisterForm: React.FC<RestaurantRegisterFormProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="form-label text-xs font-semibold block mb-1">GSTIN (GST Number)</label>
+                <label className="form-label text-xs font-semibold block mb-1">
+                  GSTIN (GST Number)
+                </label>
                 <input
                   type="text"
                   name="gstNumber"
@@ -332,11 +414,15 @@ export const RestaurantRegisterForm: React.FC<RestaurantRegisterFormProps> = ({
                   className="input-field w-full min-h-[48px] px-3.5 text-xs sm:text-sm font-mono uppercase bg-white"
                   disabled={isSubmitting}
                 />
-                <span className="text-[10px] text-neutral-500 mt-1 block">Optional for composition / exempt sellers</span>
+                <span className="text-[10px] text-neutral-500 mt-1 block">
+                  Optional for composition / exempt sellers
+                </span>
               </div>
 
               <div>
-                <label className="form-label text-xs font-semibold block mb-1">FSSAI Food License Number</label>
+                <label className="form-label text-xs font-semibold block mb-1">
+                  FSSAI Food License Number
+                </label>
                 <input
                   type="text"
                   name="fssaiNumber"
@@ -346,12 +432,16 @@ export const RestaurantRegisterForm: React.FC<RestaurantRegisterFormProps> = ({
                   className="input-field w-full min-h-[48px] px-3.5 text-xs sm:text-sm font-mono bg-white"
                   disabled={isSubmitting}
                 />
-                <span className="text-[10px] text-neutral-500 mt-1 block">14-Digit FSSAI License Number</span>
+                <span className="text-[10px] text-neutral-500 mt-1 block">
+                  14-Digit FSSAI License Number
+                </span>
               </div>
             </div>
 
             <div>
-              <label className="form-label text-xs font-semibold block mb-1">Tax Invoice Prefix</label>
+              <label className="form-label text-xs font-semibold block mb-1">
+                Tax Invoice Prefix
+              </label>
               <input
                 type="text"
                 name="invoicePrefix"
@@ -374,7 +464,9 @@ export const RestaurantRegisterForm: React.FC<RestaurantRegisterFormProps> = ({
             </h4>
 
             <div>
-              <label className="form-label text-xs font-semibold block mb-1">Street Address & Landmark</label>
+              <label className="form-label text-xs font-semibold block mb-1">
+                Street Address & Landmark
+              </label>
               <input
                 type="text"
                 name="address"
@@ -388,7 +480,9 @@ export const RestaurantRegisterForm: React.FC<RestaurantRegisterFormProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="form-label text-xs font-semibold block mb-1">City *</label>
+                <label className="form-label text-xs font-semibold block mb-1">
+                  City *
+                </label>
                 <input
                   type="text"
                   name="city"
@@ -402,7 +496,9 @@ export const RestaurantRegisterForm: React.FC<RestaurantRegisterFormProps> = ({
               </div>
 
               <div>
-                <label className="form-label text-xs font-semibold block mb-1">Pincode</label>
+                <label className="form-label text-xs font-semibold block mb-1">
+                  Pincode
+                </label>
                 <input
                   type="text"
                   name="pincode"
@@ -417,7 +513,9 @@ export const RestaurantRegisterForm: React.FC<RestaurantRegisterFormProps> = ({
 
             {/* State Select Dropdown (Full width for clean mobile layout without text truncation) */}
             <div>
-              <label className="form-label text-xs font-semibold block mb-1">State & GST Code *</label>
+              <label className="form-label text-xs font-semibold block mb-1">
+                State & GST Code *
+              </label>
               <select
                 name="state"
                 value={formData.state}
@@ -445,7 +543,9 @@ export const RestaurantRegisterForm: React.FC<RestaurantRegisterFormProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="form-label text-xs font-semibold block mb-1">Employee Staff Range *</label>
+                <label className="form-label text-xs font-semibold block mb-1">
+                  Employee Staff Range *
+                </label>
                 <select
                   name="employeeRange"
                   value={formData.employeeRange}
@@ -462,7 +562,9 @@ export const RestaurantRegisterForm: React.FC<RestaurantRegisterFormProps> = ({
               </div>
 
               <div>
-                <label className="form-label text-xs font-semibold block mb-1">Total Dining Tables *</label>
+                <label className="form-label text-xs font-semibold block mb-1">
+                  Total Dining Tables *
+                </label>
                 <input
                   type="number"
                   name="totalTables"
@@ -477,7 +579,9 @@ export const RestaurantRegisterForm: React.FC<RestaurantRegisterFormProps> = ({
             </div>
 
             <div>
-              <label className="form-label text-xs font-semibold block mb-1">Cuisine / Establishment Type</label>
+              <label className="form-label text-xs font-semibold block mb-1">
+                Cuisine / Establishment Type
+              </label>
               <input
                 type="text"
                 name="cuisineType"
@@ -540,7 +644,7 @@ export const RestaurantRegisterForm: React.FC<RestaurantRegisterFormProps> = ({
 
           <button
             type="button"
-            onClick={onReturnToLogin}
+            onClick={() => navigate("/auth/login")}
             className="w-full text-center text-xs font-display font-bold text-[#71717A] hover:text-[#E76F51] transition-colors flex items-center justify-center gap-1.5 py-2 cursor-pointer"
           >
             <ArrowLeft size={16} />
@@ -548,6 +652,10 @@ export const RestaurantRegisterForm: React.FC<RestaurantRegisterFormProps> = ({
           </button>
         </div>
       </form>
+    </div>
+
+    {/* end of ambient glow and business header wrapper container */}
+    </div>
     </div>
   );
 };
