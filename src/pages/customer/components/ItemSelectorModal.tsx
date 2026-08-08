@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Plus, Minus, Check } from 'lucide-react';
-import { useApp } from '../context/AppContext';
-import { MenuItem } from '../menuData';
+import { MenuItem } from '../../../types/menuData';
 
 interface ItemSelectorModalProps {
   item: MenuItem | null;
   onClose: () => void;
+  addToCart: (item: MenuItem, quantity: number, excluded: string[], added: string[], notes: string) => void
 }
 
-export const ItemSelectorModal: React.FC<ItemSelectorModalProps> = ({ item, onClose }) => {
-  const { addToCart } = useApp();
+export const ItemSelectorModal: React.FC<ItemSelectorModalProps> = ({ item, onClose, addToCart }) => {
+
   const [quantity, setQuantity] = useState<number>(1);
   const [excludedIngredients, setExcludedIngredients] = useState<string[]>([]);
   const [addedIngredients, setAddedIngredients] = useState<string[]>([]);

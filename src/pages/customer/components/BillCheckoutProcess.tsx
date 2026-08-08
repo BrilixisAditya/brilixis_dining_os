@@ -4,15 +4,13 @@ import {
   Receipt, User, Phone, KeyRound, Sparkles, AlertCircle, 
   CreditCard, Smartphone, ArrowRight, Download, Send 
 } from 'lucide-react';
-import { useApp } from '../context/AppContext';
+import useOrders from '@/src/hooks/useOrders';
 
-export const BillCheckoutProcess: React.FC = () => {
-  const { 
-    allOrders, 
-    tableNumber, 
-    payBillForOrder,
-    clearCart
-  } = useApp();
+export const BillCheckoutProcess: React.FC<{tableNumber: number}> = ({tableNumber}) => {
+
+  const {orders} = useOrders();
+
+  const [allOrders, setAllOrders] = useState(orders);
 
   // Find active billing order for this table
   const activeOrder = useMemo(() => {
@@ -74,10 +72,10 @@ export const BillCheckoutProcess: React.FC = () => {
     setIsProcessingPayment(true);
     setTimeout(() => {
       // Settle order via shared global context API
-      payBillForOrder(activeOrder.id, custName, custPhone);
+      // payBillForOrder(activeOrder.id, custName, custPhone);
       setIsProcessingPayment(false);
       setCheckoutStep('invoice');
-      clearCart(); // Clean customer cart physically
+      // clearCart(); // Clean customer cart physically
     }, 2500);
   };
 
@@ -100,7 +98,7 @@ export const BillCheckoutProcess: React.FC = () => {
             Table {tableNumber.toString().padStart(2, '0')} Billing Center
           </h3>
           <p className="text-[10px] text-[#6B7280] font-mono leading-none tracking-widest uppercase mt-0.5">
-            OrderID: {activeOrder.id}
+            OrderID: {activeOrder?.id}
           </p>
         </div>
       </div>

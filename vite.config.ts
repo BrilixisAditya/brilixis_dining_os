@@ -5,8 +5,6 @@ import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
   return {
-    base: '/restaurant/',
-
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {

@@ -1,17 +1,18 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Sparkles, Utensils, Flame, CupSoda, Cherry, Check, Info } from 'lucide-react';
-import { useApp } from '../context/AppContext';
-import { CATEGORIES } from '../menuData';
+import { useApp } from '../../../context/AppContext';
+import { CATEGORIES } from '../../../types/menuData';
 
-export const MobileSidebar: React.FC = () => {
-  const {
-    isMobileSidebarOpen,
-    setIsMobileSidebarOpen,
-    activeCategory,
-    setActiveCategory,
-    tableNumber
-  } = useApp();
+interface MobileSidebarProps{
+  tableNumber: number,
+  activeCategory: string,
+  setActiveCategory: (val:string) => void,
+  isMobileSidebarOpen: boolean,
+  setIsMobileSidebarOpen: (val:boolean) => void
+}
+
+export const MobileSidebar: React.FC<MobileSidebarProps> = ({tableNumber, activeCategory, setActiveCategory, isMobileSidebarOpen, setIsMobileSidebarOpen}) => {
 
   const handleSelectCategory = (catId: string) => {
     setActiveCategory(catId);

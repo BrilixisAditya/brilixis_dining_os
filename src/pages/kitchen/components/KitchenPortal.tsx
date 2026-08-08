@@ -1,6 +1,7 @@
 import React, { useMemo, useEffect, useState } from 'react';
 import { ChefHat, Timer, Check, AlertTriangle, LogOut } from 'lucide-react';
-import { useApp } from '../context/AppContext';
+import { useApp } from '../../../context/AppContext';
+import useOrders from '@/src/hooks/useOrders';
 
 // Helper component to render elapsed time stopwatch on active KOT cards
 const CookingStopwatch: React.FC<{ startTimeIso: string }> = ({ startTimeIso }) => {
@@ -34,7 +35,10 @@ const CookingStopwatch: React.FC<{ startTimeIso: string }> = ({ startTimeIso }) 
 };
 
 export const KitchenPortal: React.FC = () => {
-  const { allOrders, updateOrderStatus, setActiveRole } = useApp();
+  // const { allOrders, , setActiveRole } = useApp();
+  const {orders: allOrders} = useOrders();
+  const updateOrderStatus = (id: string, status: string) => {}
+  const setActiveRole = (role: string) => {}// temp
 
   const handleLogout = () => {
     setActiveRole('login');

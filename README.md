@@ -10,8 +10,7 @@ View your app in AI Studio: https://ai.studio/apps/44dbf40f-9c0d-4ec6-b668-d4f52
 
 ## Run Locally
 
-**Prerequisites:**  Node.js
-
+**Prerequisites:** Node.js
 
 1. Install dependencies:
    `npm install`
@@ -19,4 +18,93 @@ View your app in AI Studio: https://ai.studio/apps/44dbf40f-9c0d-4ec6-b668-d4f52
 3. Run the app:
    `npm run dev`
 
-## How to manage sessions?
+## Final Folder Structure v1
+
+```
+src/
+│
+├── assets/
+│   ├── images/
+│   ├── icons/
+│   └── fonts/
+│
+├── router/
+│   ├── AppRoutes.tsx
+│   ├── ProtectedRoute.tsx
+│   └── routeConstants.ts
+│
+├── pages/
+│
+│   ├── customer/
+│   │   ├── CustomerPage.tsx
+│   │   ├── components/
+│   │   └── hooks/
+│   │
+│   ├── waiter/
+│   │   ├── WaiterPage.tsx
+│   │   ├── components/
+│   │   └── hooks/
+│   │
+│   ├── kitchen/
+│   │   ├── KitchenPage.tsx
+│   │   ├── components/
+│   │   └── hooks/
+│   │
+│   ├── manager/
+│   │   ├── ManagerPage.tsx
+│   │   ├── components/
+│   │   └── hooks/
+│   │
+│   ├── owner/
+│   │   ├── OwnerPage.tsx
+│   │   ├── components/
+│   │   └── hooks/
+│   │
+│   └── login/
+│       └── LoginPage.tsx
+│
+├── components/
+│   ├── common/
+│   ├── buttons/
+│   ├── dialogs/
+│   ├── cards/
+│   └── forms/
+│
+├── contexts/
+│   ├── AuthContext.tsx
+│   ├── RestaurantContext.tsx
+│   └── CustomerSessionContext.tsx
+│
+├── services/
+│   ├── api/
+│   │   ├── axios.ts
+│   │   └── endpoints.ts
+│   │
+│   ├── auth.service.ts
+│   ├── order.service.ts
+│   ├── waiter.service.ts
+│   ├── bill.service.ts
+│   ├── customer.service.ts
+│   ├── menu.service.ts
+│   └── table.service.ts
+│
+├── hooks/
+│   ├── useDebounce.ts
+│   ├── usePagination.ts
+│   ├── useSocket.ts
+│   └── useLocalStorage.ts
+│
+├── utils/
+│
+├── constants/
+│
+├── types/
+│
+├── App.tsx
+├── main.tsx
+└── index.css
+```
+
+- total users options upto 20
+- total tables
+-

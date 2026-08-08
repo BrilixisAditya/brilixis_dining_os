@@ -1,11 +1,18 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { BellRing, CheckCircle2, Loader2, X, User } from 'lucide-react';
-import { useApp } from '../context/AppContext';
-import { WaiterRequest } from '../types';
+import { useApp } from '../../../context/AppContext';
+import { WaiterRequest } from '../../../types/types';
+import { cancelWaiterRequest, triggerCallWaiter } from '@/src/services/waiter_request.service';
 
-export const WaiterSummoner: React.FC = () => {
-  const { waiterRequest, triggerCallWaiter, cancelWaiterRequest, tableNumber } = useApp();
+interface WaiterSummonerProps{tableNumber: number,
+   setAllWaiterRequest: React.Dispatch<any>, 
+   waiterRequest: WaiterRequest | null,
+   setWaiterRequest: React.Dispatch<any>
+  }
+
+export const WaiterSummoner: React.FC<WaiterSummonerProps> = ({tableNumber, setAllWaiterRequest, waiterRequest, setWaiterRequest}) => {
+
   const [, setSelectedType] = useState<WaiterRequest['type']>('general');
 
   const CALL_OPTIONS = [
@@ -19,7 +26,7 @@ export const WaiterSummoner: React.FC = () => {
 
   const handleSummon = (type: WaiterRequest['type'], label: string) => {
     setSelectedType(type);
-    triggerCallWaiter(type, label);
+    triggerCallWaiter(type, label, tableNumber, setAllWaiterRequest);
   };
 
   return (
@@ -100,7 +107,7 @@ export const WaiterSummoner: React.FC = () => {
               </div>
               
               <button
-                onClick={cancelWaiterRequest}
+                onClick={()=>cancelWaiterRequest(tableNumber, setAllWaiterRequest, setWaiterRequest)}
                 className="btn-icon p-1.5 rounded-full"
                 title="Cancel Service Call"
                 id="cancel-summon"
@@ -184,7 +191,7 @@ export const WaiterSummoner: React.FC = () => {
               <motion.button
                 initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
-                onClick={cancelWaiterRequest}
+                onClick={()=>cancelWaiterRequest(tableNumber, setAllWaiterRequest, setWaiterRequest)}
                 className="btn-outline mt-4 w-full py-2 text-xs text-center"
                 id="dismiss-resolved-call"
               >

@@ -1,13 +1,18 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { TrendingUp, Users, DollarSign, Receipt, ChefHat, LogOut } from 'lucide-react';
-import { useApp } from '../context/AppContext';
+import { useApp } from '../../../context/AppContext';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell } from 'recharts';
+import useOrders from '@/src/hooks/useOrders';
+import { WaiterRequest } from '@/src/types/types';
 
 export const OwnerDashboard: React.FC = () => {
-  const { allOrders, setActiveRole, allWaiterRequests } = useApp();
+  // const { allOrders, setActiveRole, allWaiterRequests } = useApp();
+  const {orders:allOrders} = useOrders();
+
+  const [allWaiterRequests, setAllWaiterRequest] = useState<WaiterRequest[]>([]);
 
   const handleLogout = () => {
-    setActiveRole('login');
+    // setActiveRole('login');
   };
 
   // Compile calculations safely from live + historical data
@@ -25,7 +30,7 @@ export const OwnerDashboard: React.FC = () => {
       }
     });
     allWaiterRequests.forEach((w) => {
-      activeTables.add(w.tableNumber);
+      activeTables.add(w?.tableNumber ?? 0);
     });
 
     const occupancyRate = (activeTables.size / 10) * 100;

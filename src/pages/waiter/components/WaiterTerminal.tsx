@@ -4,21 +4,23 @@ import {
   BellRing, Check, Minus, Trash2, Edit3, 
   CheckCircle, PlusCircle, Search, LogOut, Plus 
 } from 'lucide-react';
-import { useApp } from '../context/AppContext';
-import { MENU_ITEMS, MenuItem } from '../menuData';
-import { OrderItem } from '../types';
+import { useApp } from '../../../context/AppContext';
+import { MENU_ITEMS, MenuItem } from '../../../types/menuData';
+import { OrderItem, WaiterRequest } from '../../../types/types';
+import useOrders from '@/src/hooks/useOrders';
 
 export const WaiterTerminal: React.FC = () => {
-  const { 
-    allOrders, 
-    allWaiterRequests, 
-    updateOrderItems, 
-    sendOrderToKitchen, 
-    updateOrderStatus,
-    resolveWaiterCall, 
-    setActiveRole,
-    setTableNumber
-  } = useApp();
+
+    const [allWaiterRequests, setAllWaiterRequest] = useState<WaiterRequest[]>([]); 
+    const updateOrderItems = (orderId: string, updatedItems: OrderItem[]) => {} 
+    const sendOrderToKitchen = (id: string) => {}
+    const updateOrderStatus = (id: string, status: string) => {}
+    const resolveWaiterCall = (id: string) => {}
+    const setActiveRole = (role: string) => {}
+    const setTableNumber = (tblNumber: number) => {}
+
+
+  const {orders: allOrders} = useOrders();
 
   // Picked waiter context
   const WAITER_NAME = 'Devi Patel'; 
@@ -612,7 +614,7 @@ export const WaiterTerminal: React.FC = () => {
                 <div>
                   <h5 className="text-[10px] font-mono text-[#6B7280] uppercase font-bold mb-2">Exclusions</h5>
                   <div className="grid grid-cols-2 gap-2">
-                    {activeOrder.items[modifyingItemIdx].menuItem.ingredients.map((ing) => {
+                    {activeOrder.items[modifyingItemIdx].menuItem.ingredients.map((ing:any) => {
                       const isExcluded = activeOrder.items[modifyingItemIdx].excludedIngredients.includes(ing);
                       return (
                         <button

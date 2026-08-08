@@ -1,32 +1,36 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { Search, Sparkles, Plus, LayoutGrid, Leaf, ChevronRight } from 'lucide-react';
-import { useApp } from '../context/AppContext';
-import { CATEGORIES } from '../menuData';
+import { CATEGORIES } from '../../../types/menuData';
 
 interface MenuSectionProps {
   onCustomizeItem: (itemId: string) => void;
+  activeCategory: string;
+  setActiveCategory: (val: string) => void;
 }
 
-export const MenuSection: React.FC<MenuSectionProps> = ({ onCustomizeItem }) => {
-  const { activeCategory, setActiveCategory, menuItems } = useApp();
+export const MenuSection: React.FC<MenuSectionProps> = ({ onCustomizeItem, activeCategory, setActiveCategory }) => {
+
+  // const {menuItems } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
   const [dietFilter, setDietFilter] = useState<'all' | 'veg' | 'nonveg'>('all');
 
   // Filter Items
-  const filteredItems = menuItems.filter((item) => {
-    const matchesCategory = item.category === activeCategory;
-    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          item.ingredients.some(ing => ing.toLowerCase().includes(searchQuery.toLowerCase()));
+  // const filteredItems = [].filter((item) => {
+  //   const matchesCategory = item.category === activeCategory;
+  //   const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  //                         item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  //                         item.ingredients.some(ing => ing.toLowerCase().includes(searchQuery.toLowerCase()));
     
-    const matchesDiet = 
-      dietFilter === 'all' || 
-      (dietFilter === 'veg' && item.isVeg) || 
-      (dietFilter === 'nonveg' && !item.isVeg);
+  //   const matchesDiet = 
+  //     dietFilter === 'all' || 
+  //     (dietFilter === 'veg' && item.isVeg) || 
+  //     (dietFilter === 'nonveg' && !item.isVeg);
 
-    return matchesCategory && matchesSearch && matchesDiet;
-  });
+  //   return matchesCategory && matchesSearch && matchesDiet;
+  // });
+
+  const filteredItems:any = [];
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-8 items-start" id="menu-section-container">
@@ -135,7 +139,7 @@ export const MenuSection: React.FC<MenuSectionProps> = ({ onCustomizeItem }) => 
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5" id="products-grid">
-            {filteredItems.map((item) => {
+            {filteredItems.map((item:any) => {
               const isSoldOut = item.isOutOfStock;
               return (
                 <motion.div

@@ -28,10 +28,15 @@ import {
   Trash2,
   X
 } from 'lucide-react';
-import { useApp } from '../context/AppContext';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from 'recharts';
-import { MenuItem } from '../menuData';
-import { StaffUser, RestaurantTable } from '../types';
+import { MenuItem } from '../../../types/menuData';
+import { StaffUser, RestaurantTable, WaiterRequest } from '../../../types/types';
+import { useRestaurant } from '@/src/context/RestaurantContext';
+import { resolveWaiterCall } from '@/src/services/waiter_request.service';
+import useStaff from '@/src/hooks/useStaff';
+import useMenu from '@/src/hooks/useMenu';
+import useOrders from '@/src/hooks/useOrders';
+import { useNavigate } from 'react-router-dom';
 
 const INDIAN_STATES = [
   { name: 'Jammu and Kashmir', code: '01' },
@@ -74,26 +79,22 @@ const INDIAN_STATES = [
 ];
 
 export const ManagerDashboard: React.FC = () => {
-  const { 
-    allOrders, 
-    setActiveRole, 
-    menuItems, 
-    addMenuItem,
-    updateMenuItem, 
-    deleteMenuItem,
-    staffUsers,
-    addStaffUser,
-    updateStaffUser,
-    deleteStaffUser,
-    restaurantTables,
-    addTable,
-    updateTable,
-    deleteTable,
-    allWaiterRequests, 
-    resolveWaiterCall,
-    restaurantGstProfile,
-    updateRestaurantGstProfile
-  } = useApp();
+
+  const [allWaiterRequests, setAllWaiterRequest] = useState<WaiterRequest[]>([]); 
+  const {restaurantGstProfile, updateRestaurantGstProfile} = useRestaurant();
+  const {staffUsers, addStaffUser, updateStaffUser, deleteStaffUser} = useStaff();
+  const {menuItems, addMenuItem, updateMenuItem, deleteMenuItem} = useMenu();
+  const {orders: allOrders} = useOrders();
+
+  const navigate = useNavigate();
+
+  const [restaurantTables, setRestaurantTables] = useState<RestaurantTable[]>([]);
+
+  const addTable = (newTable: RestaurantTable) => {};
+  const updateTable = (tableId: string, updatedFields: Partial<RestaurantTable>) => {};
+  const deleteTable = (tableId: string) => {};
+  
+  
   
   // Navigation Tabs matching prompt requirements:
   // 1: Analytics & financials + Audit ledger
@@ -115,7 +116,7 @@ export const ManagerDashboard: React.FC = () => {
   const [editingMenuItem, setEditingMenuItem] = useState<MenuItem | null>(null);
   const [menuForm, setMenuForm] = useState({
     name: '',
-    category: 'Starters' as 'Starters' | 'Appetizers' | 'Main Course' | 'Beverages' | 'Desserts',
+    category: 'starters' as 'starters' | 'appetizers' | 'main course' | 'beverages' | 'desserts',
     price: 250,
     description: '',
     imageUrl: '',
@@ -155,7 +156,7 @@ export const ManagerDashboard: React.FC = () => {
     setEditingMenuItem(null);
     setMenuForm({
       name: '',
-      category: 'Starters',
+      category: 'starters',
       price: 250,
       description: '',
       imageUrl: '',
@@ -209,7 +210,7 @@ export const ManagerDashboard: React.FC = () => {
         description: menuForm.description.trim(),
         imageUrl: menuForm.imageUrl.trim() || defaultImg,
         isVeg: menuForm.isVeg,
-        spiceLevel: menuForm.spiceLevel,
+        // spiceLevel: menuForm.spiceLevel,
         ingredients: ingredientsList.length > 0 ? ingredientsList : ['Chef Special Ingredients'],
         gstRate: Number(menuForm.gstRate),
         hsnCode: menuForm.hsnCode.trim() || '996331'
@@ -225,7 +226,8 @@ export const ManagerDashboard: React.FC = () => {
         description: menuForm.description.trim(),
         imageUrl: menuForm.imageUrl.trim() || defaultImg,
         isVeg: menuForm.isVeg,
-        spiceLevel: menuForm.spiceLevel,
+        // spiceLevel: menuForm.spiceLevel,
+        tags: [],
         ingredients: ingredientsList.length > 0 ? ingredientsList : ['Chef Special Ingredients'],
         isOutOfStock: false,
         gstRate: Number(menuForm.gstRate),
@@ -417,8 +419,8 @@ export const ManagerDashboard: React.FC = () => {
       setProfileRestaurantName(restaurantGstProfile.restaurantName);
       setProfileLegalName(restaurantGstProfile.legalBusinessName);
       setProfileGstin(restaurantGstProfile.gstin);
-      setProfilePan(restaurantGstProfile.pan);
-      setProfileFssai(restaurantGstProfile.fssaiNumber);
+      setProfilePan(restaurantGstProfile?.pan ?? 'none');
+      setProfileFssai(restaurantGstProfile?.fssaiNumber ?? 'none');
       setProfileAddress(restaurantGstProfile.address);
       setProfilePincode(restaurantGstProfile.pincode);
       setProfileState(restaurantGstProfile.state);
@@ -475,26 +477,27 @@ export const ManagerDashboard: React.FC = () => {
     }
 
     // Update profile
-    updateRestaurantGstProfile({
-      restaurantName: profileRestaurantName.trim(),
-      legalBusinessName: profileLegalName.trim(),
-      gstin: cleanGstin,
-      pan: cleanPan,
-      fssaiNumber: cleanFssai,
-      address: profileAddress.trim(),
-      pincode: profilePincode.trim(),
-      state: profileState,
-      stateCode: profileStateCode,
-      phoneNumber: profilePhone.trim(),
-      email: profileEmail.trim(),
-      financialYear: profileFy,
-    });
+    // updateRestaurantGstProfile({
+    //   restaurantName: profileRestaurantName.trim(),
+    //   legalBusinessName: profileLegalName.trim(),
+    //   gstin: cleanGstin,
+    //   pan: cleanPan,
+    //   fssaiNumber: cleanFssai,
+    //   address: profileAddress.trim(),
+    //   pincode: profilePincode.trim(),
+    //   state: profileState,
+    //   stateCode: profileStateCode,
+    //   phoneNumber: profilePhone.trim(),
+    //   email: profileEmail.trim(),
+    //   financialYear: profileFy,
+    // });
 
     triggerToast('SUCCESS: Saffron GST compliance profile updated & synchronized!');
   };
 
   const handleLogout = () => {
-    setActiveRole('login');
+    // TODO logout api call and context deletion code
+    navigate('/auth/login');
   };
 
   const handleToggleStaffStatus = (id: string, current: string) => {
@@ -660,7 +663,7 @@ export const ManagerDashboard: React.FC = () => {
   const handleClearTable = (tableNumber: number) => {
     // Clear/resolve active requests for this table
     const tableRequests = allWaiterRequests.filter(r => r.tableNumber === tableNumber);
-    tableRequests.forEach(req => resolveWaiterCall(req.id));
+    tableRequests.forEach(req => resolveWaiterCall(req.id, setAllWaiterRequest));
     triggerToast(`Cleared: Table ${tableNumber.toString().padStart(2, '0')} has been marked available and readied for next seating.`);
   };
 

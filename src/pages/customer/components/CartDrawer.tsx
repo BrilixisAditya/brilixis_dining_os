@@ -6,24 +6,30 @@ import {
   CreditCard, Smartphone, CheckCircle, ArrowRight, Download, Send,
   Mail, Building
 } from 'lucide-react';
-import { useApp } from '../context/AppContext';
+import { CartItem, WaiterRequest } from '@/src/types/types';
+import useOrders from '@/src/hooks/useOrders';
+import { useRestaurant } from '@/src/context/RestaurantContext';
+import { triggerCallWaiter } from '@/src/services/waiter_request.service';
+import { payBill as payBillForOrder } from '@/src/services/billing.service';
 
-export const CartDrawer: React.FC = () => {
-  const {
-    isCartOpen,
-    setIsCartOpen,
-    cart,
-    removeFromCart,
-    updateCartItemQuantity,
-    clearCart,
-    tableNumber,
-    waiterRequest,
-    triggerCallWaiter,
-    allOrders,
-    submitDraftOrder,
-    payBillForOrder,
-    restaurantGstProfile,
-  } = useApp();
+interface CartDrawerProps{
+  isCartOpen: boolean,
+  setIsCartOpen: (val: boolean)=>void,
+  tableNumber: number,
+  // states
+  cart: CartItem[],
+  removeFromCart: (cartItemId: string) => void,
+  updateCartItemQuantity: (cartItemId: string, quantity: number) => void,
+  clearCart: ()=>void,
+  waiterRequest: WaiterRequest | null,
+
+}
+
+export const CartDrawer: React.FC<CartDrawerProps> = ({tableNumber, isCartOpen, setIsCartOpen, cart, removeFromCart, updateCartItemQuantity, clearCart, waiterRequest}) => {
+
+  const {orders: allOrders, createOrder: submitDraftOrder} = useOrders();
+  const {restaurantGstProfile} = useRestaurant();
+
 
   const [waiterSummonedForOrder, setWaiterSummonedForOrder] = useState(false);
 
@@ -281,15 +287,15 @@ export const CartDrawer: React.FC = () => {
             <table class="header-table">
               <tr>
                 <td>
-                  <div class="title">${restaurantGstProfile.restaurantName}</div>
-                  <div class="subtitle">${restaurantGstProfile.legalBusinessName}</div>
+                  <div class="title">${restaurantGstProfile?.restaurantName ?? 'Unkown'}</div>
+                  <div class="subtitle">${restaurantGstProfile?.legalBusinessName ?? 'Unknown Business Name'}</div>
                   <p style="margin: 5px 0;">
-                    ${restaurantGstProfile.address}<br>
-                    State: ${restaurantGstProfile.state} (Code: ${restaurantGstProfile.stateCode}), Pincode: ${restaurantGstProfile.pincode}<br>
-                    Phone: ${restaurantGstProfile.phoneNumber} | Email: ${restaurantGstProfile.email}
+                    ${restaurantGstProfile?.address ?? 'none'}<br>
+                    State: ${restaurantGstProfile?.state ?? 'none'} (Code: ${restaurantGstProfile?.stateCode ?? 'none'}), Pincode: ${restaurantGstProfile?.pincode ?? 'none'}<br>
+                    Phone: ${restaurantGstProfile?.phoneNumber ?? 'none'} | Email: ${restaurantGstProfile?.email ?? 'none'}
                   </p>
                   <p style="margin: 5px 0; font-weight: bold;">
-                    GSTIN: ${restaurantGstProfile.gstin} ${restaurantGstProfile.fssaiNumber ? ' | FSSAI: ' + restaurantGstProfile.fssaiNumber : ''} ${restaurantGstProfile.pan ? ' | PAN: ' + restaurantGstProfile.pan : ''}
+                    GSTIN: ${restaurantGstProfile?.gstin ?? 'none'} ${restaurantGstProfile?.fssaiNumber ? ' | FSSAI: ' + restaurantGstProfile?.fssaiNumber : ''} ${restaurantGstProfile?.pan ? ' | PAN: ' + restaurantGstProfile.pan : ''}
                   </p>
                 </td>
                 <td class="text-right" style="vertical-align: top;">
@@ -299,7 +305,7 @@ export const CartDrawer: React.FC = () => {
                     <strong>Invoice No:</strong> ${order.invoiceNumber}<br>
                     <strong>Date:</strong> ${new Date(order.paymentDetails?.paidAt || order.createdAt).toLocaleString('en-IN')}<br>
                     <strong>Table:</strong> Table ${order.tableNumber.toString().padStart(2, '0')}<br>
-                    <strong>FY:</strong> ${restaurantGstProfile.financialYear}
+                    <strong>FY:</strong> ${restaurantGstProfile?.financialYear ?? 'none'}
                   </p>
                 </td>
               </tr>
@@ -468,13 +474,13 @@ export const CartDrawer: React.FC = () => {
                 </p>
               </div>
               <div class="signature-block">
-                <p style="margin: 0 0 5px 0; font-size: 9px; color: #555; font-weight: bold;">For ${restaurantGstProfile.restaurantName}</p>
+                <p style="margin: 0 0 5px 0; font-size: 9px; color: #555; font-weight: bold;">For ${restaurantGstProfile?.restaurantName ?? 'Unknown'}</p>
                 <div class="signature-line">Authorized Signatory</div>
               </div>
             </div>
 
             <div class="footer">
-              Thank you for dining with us at ${restaurantGstProfile.restaurantName}! Truly modern culinary heritage.
+              Thank you for dining with us at ${restaurantGstProfile?.restaurantName ?? 'Unknown'}! Truly modern culinary heritage.
             </div>
           </div>
           <script>
@@ -501,10 +507,10 @@ export const CartDrawer: React.FC = () => {
     if (cart.length === 0) return;
     
     // Call waiter with special order placement request label
-    triggerCallWaiter('general', 'Order Verification Call');
+    // triggerCallWaiter('general', 'Order Verification Call');
     
     // Submit the draft order physically to the system so it appears on waiter & kitchen screens
-    submitDraftOrder(tableNumber);
+    // submitDraftOrder(tableNumber);
     setWaiterSummonedForOrder(true);
   };
 
@@ -562,14 +568,14 @@ export const CartDrawer: React.FC = () => {
     setIsProcessingPayment(true);
     setTimeout(() => {
       // Settle order via shared global context API
-      payBillForOrder(
-        activeOrder.id,
-        custName,
-        custPhone,
-        custEmail,
-        isBusiness ? custGstin.toUpperCase() : undefined,
-        isBusiness ? companyName : undefined
-      );
+      // payBillForOrder(
+      //   activeOrder.id,
+      //   custName,
+      //   custPhone,
+      //   custEmail,
+      //   isBusiness ? custGstin.toUpperCase() : undefined,
+      //   isBusiness ? companyName : undefined
+      // );
       setIsProcessingPayment(false);
       setCheckoutStep('invoice');
       clearCart(); // Clean customer cart physically
@@ -1045,9 +1051,9 @@ export const CartDrawer: React.FC = () => {
                       </div>
 
                       <div className="text-center border-b border-dashed border-[#ECE7E1] pb-2">
-                        <p className="font-display font-black text-[11px] uppercase tracking-wide">{restaurantGstProfile.restaurantName}</p>
-                        <p className="text-[7px] text-[#6B7280]">GSTIN: {restaurantGstProfile.gstin}</p>
-                        <p className="text-[6px] text-neutral-400">{restaurantGstProfile.address}</p>
+                        <p className="font-display font-black text-[11px] uppercase tracking-wide">{restaurantGstProfile?.restaurantName ?? 'Unknown'}</p>
+                        <p className="text-[7px] text-[#6B7280]">GSTIN: {restaurantGstProfile?.gstin ?? 'none'}</p>
+                        <p className="text-[6px] text-neutral-400">{restaurantGstProfile?.address ?? 'none'}</p>
                       </div>
 
                       <div className="space-y-0.5 border-b border-dashed border-[#ECE7E1] pb-2 text-[8px]">
@@ -1072,7 +1078,7 @@ export const CartDrawer: React.FC = () => {
                         {paidOrder.items.map((it) => (
                           <div key={it.id} className="flex justify-between">
                             <span>{it.quantity}x {it.menuItem.name.substring(0,22)}</span>
-                            <span>₹{(it.taxableValue || it.menuItem.price * it.quantity).toFixed(2)}</span>
+                            <span>₹{((/*it?.taxableValue*/ 0) || it.menuItem.price * it.quantity).toFixed(2)}</span>
                           </div>
                         ))}
                       </div>
@@ -1099,15 +1105,15 @@ export const CartDrawer: React.FC = () => {
                             </div>
                           </>
                         )}
-                        {paidOrder.discount > 0 && (
+                        {(paidOrder?.discount ?? 0) > 0 && (
                           <div className="flex justify-between font-normal text-[#E76F51]">
                             <span>Discount Applied</span>
-                            <span>-₹{paidOrder.discount.toFixed(2)}</span>
+                            <span>-₹{(paidOrder?.discount ?? 0.00).toFixed(2)}</span>
                           </div>
                         )}
                         <div className="flex justify-between font-normal text-neutral-400">
                           <span>Round Off Adjustment</span>
-                          <span>₹{paidOrder.gstSummary?.roundOff >= 0 ? '+' + paidOrder.gstSummary.roundOff.toFixed(2) : paidOrder.gstSummary?.roundOff.toFixed(2)}</span>
+                          <span>₹{(paidOrder?.gstSummary?.roundOff ?? 0) >= 0 ? '+' + paidOrder?.gstSummary?.roundOff.toFixed(2) : paidOrder.gstSummary?.roundOff.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between text-[10px] text-emerald-950 border-t border-[#2D2D2D] pt-1 mt-1 font-extrabold">
                           <span>GRAND TOTAL</span>

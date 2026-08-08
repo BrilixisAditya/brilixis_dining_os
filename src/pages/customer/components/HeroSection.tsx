@@ -1,20 +1,27 @@
 import React from 'react';
 import { Sparkles, Plus, SlidersHorizontal, Clock } from 'lucide-react';
-import { useApp } from '../context/AppContext';
 
 interface HeroSectionProps {
   onCustomizeItem: (itemId: string) => void;
 }
 
 export const HeroSection: React.FC<HeroSectionProps> = ({ onCustomizeItem }) => {
-  const { addToCart, menuItems } = useApp();
+
   
   // Find signature dish (Gold Leaf Saffron Paneer Tikka or first item)
-  const signatureItem = menuItems.find(item => item.isSignature) || menuItems[0];
+  // const signatureItem = menuItems.find(item => item.isSignature) || menuItems[0];
+  const signatureItem = {
+    id: 'wuwi220',
+    name: '',
+    description: '',
+    tags: [],
+    price: 2000,
+    isVeg: false
+  }
 
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.stopPropagation();
-    addToCart(signatureItem, 1, [], [], '');
+    // addToCart(signatureItem, 1, [], [], '');
   };
 
   return (
@@ -22,8 +29,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onCustomizeItem }) => 
       {/* Signature Food Image Container */}
       <div className="relative w-full h-64 sm:h-80 overflow-hidden bg-[#FFFDF8]">
         <img
-          src={signatureItem.imageUrl}
-          alt={signatureItem.name}
+          src={''}
+          alt={''}
           referrerPolicy="no-referrer"
           className="w-full h-full object-cover object-center scale-100 hover:scale-105 transition-transform duration-700 ease-out"
           id="hero-image"
@@ -42,11 +49,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onCustomizeItem }) => 
 
         {/* Veg / Non-Veg & Prep Time Pills */}
         <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
-          {signatureItem.isVeg !== undefined && (
+          {signatureItem?.isVeg !== undefined && (
             <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/95 backdrop-blur-md border border-[#ECE7E1] text-[10px] font-mono font-bold shadow-brilixis-sm">
-              <span className={`w-2 h-2 rounded-full ${signatureItem.isVeg ? 'bg-[#2A9D8F]' : 'bg-[#EB5757]'}`} />
-              <span className={signatureItem.isVeg ? 'text-[#2A9D8F]' : 'text-[#EB5757]'}>
-                {signatureItem.isVeg ? 'Veg' : 'Non-Veg'}
+              <span className={`w-2 h-2 rounded-full ${signatureItem?.isVeg ? 'bg-[#2A9D8F]' : 'bg-[#EB5757]'}`} />
+              <span className={signatureItem?.isVeg ? 'text-[#2A9D8F]' : 'text-[#EB5757]'}>
+                {signatureItem?.isVeg ? 'Veg' : 'Non-Veg'}
               </span>
             </div>
           )}

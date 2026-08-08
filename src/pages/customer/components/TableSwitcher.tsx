@@ -1,13 +1,21 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Check } from 'lucide-react';
-import { useApp } from '../context/AppContext';
+import { RestaurantTable } from '@/src/types/types';
 
-export const TableSwitcher: React.FC = () => {
-  const { isTableSwitcherOpen, setIsTableSwitcherOpen, tableNumber, setTableNumber, restaurantTables } = useApp();
+interface TableSwitcherProps{
+  tableNumber: number,
+  setTableNumberState: (num: number)=> void,
+  isTableSwitcherOpen: boolean,
+  setIsTableSwitcherOpen: (val:boolean) => void 
+}
+
+export const TableSwitcher: React.FC<TableSwitcherProps> = ({tableNumber, setTableNumberState, isTableSwitcherOpen, setIsTableSwitcherOpen}) => {
+  
+  const [restaurantTables, setRestaurantTables] = useState<RestaurantTable[]>([]);
 
   const handleSelectTable = (num: number) => {
-    setTableNumber(num);
+    setTableNumberState(num);
     setIsTableSwitcherOpen(false);
   };
 
@@ -56,12 +64,12 @@ export const TableSwitcher: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-4 sm:grid-cols-5 gap-3 max-h-60 overflow-y-auto p-1" id="table-grid">
-              {restaurantTables.map((tbl) => {
-                const isActive = tbl.number === tableNumber;
+              {restaurantTables.length > 1 && restaurantTables.map((tbl) => {
+                const isActive = (tbl?.number ?? 0) === tableNumber;
                 return (
                   <button
-                    key={tbl.id}
-                    onClick={() => handleSelectTable(tbl.number)}
+                    key={tbl?.id}
+                    onClick={() => handleSelectTable(tbl.number ?? 0)}
                     className={`relative p-2.5 rounded-2xl flex flex-col items-center justify-center transition-all duration-200 ${
                       isActive
                         ? 'bg-[#E76F51] text-white shadow-brilixis-glow font-bold scale-102 border-transparent cursor-default'
@@ -69,16 +77,16 @@ export const TableSwitcher: React.FC = () => {
                         ? 'bg-neutral-100 border border-neutral-200 text-neutral-400 cursor-not-allowed opacity-60'
                         : 'bg-white border border-[#ECE7E1] text-[#2D2D2D] hover:border-[#E76F51]/40 cursor-pointer shadow-brilixis-sm'
                     }`}
-                    id={`table-option-${tbl.number}`}
+                    id={`table-option-${tbl.number ?? 0}`}
                   >
                     <span className={`text-[9px] font-mono leading-none ${isActive ? 'text-white/80' : 'text-[#6B7280]'} block`}>
                       TBL
                     </span>
                     <span className="text-base font-display tracking-tight leading-none mt-1 font-bold">
-                      {tbl.number.toString().padStart(2, '0')}
+                      {(tbl.number ?? 0).toString().padStart(2, '0')}
                     </span>
                     <span className={`text-[8px] font-mono leading-none mt-1 truncate ${isActive ? 'text-white/90' : 'text-[#8C7A6B]'}`}>
-                      {tbl.capacity} Pax
+                      {tbl.capacity ?? 0} Pax
                     </span>
                     {isActive && (
                       <span className="absolute top-1.5 right-1.5 p-0.5 rounded-full bg-white text-[#E76F51] scale-90">
