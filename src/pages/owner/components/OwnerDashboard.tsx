@@ -1,13 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import { TrendingUp, Users, DollarSign, Receipt, ChefHat, LogOut } from 'lucide-react';
-import { useApp } from '../../../context/AppContext';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell } from 'recharts';
 import useOrders from '@/src/hooks/useOrders';
 import { WaiterRequest } from '@/src/types/types';
 import { useNavigate } from 'react-router-dom';
 
 export const OwnerDashboard: React.FC = () => {
-  // const { allOrders, setActiveRole, allWaiterRequests } = useApp();
   const {orders:allOrders} = useOrders();
 
   const [allWaiterRequests, setAllWaiterRequest] = useState<WaiterRequest[]>([]);

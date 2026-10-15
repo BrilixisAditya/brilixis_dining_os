@@ -1,6 +1,5 @@
 import React, { useMemo, useEffect, useState } from 'react';
 import { ChefHat, Timer, Check, AlertTriangle, LogOut } from 'lucide-react';
-import { useApp } from '../../../context/AppContext';
 import useOrders from '@/src/hooks/useOrders';
 import { useNavigate } from 'react-router-dom';
 
@@ -36,7 +35,6 @@ const CookingStopwatch: React.FC<{ startTimeIso: string }> = ({ startTimeIso }) 
 };
 
 export const KitchenPortal: React.FC = () => {
-  // const { allOrders, , setActiveRole } = useApp();
   const {orders: allOrders} = useOrders();
   const updateOrderStatus = (id: string, status: string) => {}
 

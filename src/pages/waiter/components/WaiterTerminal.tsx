@@ -4,7 +4,6 @@ import {
   BellRing, Check, Minus, Trash2, Edit3, 
   CheckCircle, PlusCircle, Search, LogOut, Plus 
 } from 'lucide-react';
-import { useApp } from '../../../context/AppContext';
 import { MENU_ITEMS, MenuItem } from '../../../types/menuData';
 import { OrderItem, WaiterRequest } from '../../../types/types';
 import useOrders from '@/src/hooks/useOrders';
