@@ -1,36 +1,49 @@
-import React from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { X, Sparkles, Utensils, Flame, CupSoda, Cherry, Check, Info } from 'lucide-react';
-import { useApp } from '../../../context/AppContext';
-import { CATEGORIES } from '../../../types/menuData';
+import React from "react";
+import { motion, AnimatePresence } from "motion/react";
+import {
+  X,
+  Sparkles,
+  Utensils,
+  Flame,
+  CupSoda,
+  Cherry,
+  Check,
+  Info,
+} from "lucide-react";
+import { CATEGORIES } from "../../../types/menuData";
 
-interface MobileSidebarProps{
-  tableNumber: number,
-  activeCategory: string,
-  setActiveCategory: (val:string) => void,
-  isMobileSidebarOpen: boolean,
-  setIsMobileSidebarOpen: (val:boolean) => void
+interface MobileSidebarProps {
+  tableNumber: string;
+  activeCategory: string;
+  setActiveCategory: (val: string) => void;
+  isMobileSidebarOpen: boolean;
+  setIsMobileSidebarOpen: (val: boolean) => void;
 }
 
-export const MobileSidebar: React.FC<MobileSidebarProps> = ({tableNumber, activeCategory, setActiveCategory, isMobileSidebarOpen, setIsMobileSidebarOpen}) => {
-
+export const MobileSidebar: React.FC<MobileSidebarProps> = ({
+  tableNumber,
+  activeCategory,
+  setActiveCategory,
+  isMobileSidebarOpen,
+  setIsMobileSidebarOpen,
+}) => {
   const handleSelectCategory = (catId: string) => {
     setActiveCategory(catId);
     setIsMobileSidebarOpen(false);
   };
 
   const renderCategoryIcon = (iconStr: string, active: boolean) => {
-    const defaultClass = active ? 'text-[#E76F51]' : 'text-[#6B7280]';
+    const defaultClass = active ? "text-[#E76F51]" : "text-[#6B7280]";
     switch (iconStr) {
-      case 'Sparkles':
+      case "Sparkles":
         return <Sparkles size={18} className={defaultClass} />;
-      case 'Utensils':
+      case "Utensils":
         return <Utensils size={18} className={defaultClass} />;
-      case 'Flame':
+      case "Flame":
         return <Flame size={18} className={defaultClass} />;
-      case 'CupSoda':
+      case "CupSoda":
         return <CupSoda size={18} className={defaultClass} />;
-      case 'Cherry':
+      case "Cherry":
         return <Cherry size={18} className={defaultClass} />;
       default:
         return <Sparkles size={18} className={defaultClass} />;
@@ -53,10 +66,10 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({tableNumber, active
 
           {/* Swipeable Drawer sheet */}
           <motion.div
-            initial={{ x: '-100%' }}
+            initial={{ x: "-100%" }}
             animate={{ x: 0 }}
-            exit={{ x: '-100%' }}
-            transition={{ type: 'spring', damping: 28, stiffness: 220 }}
+            exit={{ x: "-100%" }}
+            transition={{ type: "spring", damping: 28, stiffness: 220 }}
             className="relative w-80 max-w-[85vw] bg-[#FFFDF8] h-full flex flex-col shadow-brilixis-lg p-6 z-55 border-r border-[#ECE7E1]"
             id="mobile-sidebar-panel"
           >
@@ -89,22 +102,28 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({tableNumber, active
                     onClick={() => handleSelectCategory(cat.id)}
                     className={`w-full flex items-center justify-between p-4 rounded-2xl border text-left transition-all duration-200 group cursor-pointer ${
                       isActive
-                        ? 'bg-[#E76F51]/10 text-[#E76F51] border-[#E76F51]/30 shadow-brilixis-sm font-bold'
-                        : 'bg-white text-[#2D2D2D] border-[#ECE7E1] hover:bg-[#FFFDF8]'
+                        ? "bg-[#E76F51]/10 text-[#E76F51] border-[#E76F51]/30 shadow-brilixis-sm font-bold"
+                        : "bg-white text-[#2D2D2D] border-[#ECE7E1] hover:bg-[#FFFDF8]"
                     }`}
                     id={`mobile-cat-option-${cat.id}`}
                   >
                     <div className="flex items-center gap-3.5">
-                      <div className={`p-2.5 rounded-xl border transition-colors ${
-                        isActive ? 'bg-white border-[#E76F51]/30' : 'bg-[#FFFDF8] border-[#ECE7E1]'
-                      }`}>
+                      <div
+                        className={`p-2.5 rounded-xl border transition-colors ${
+                          isActive
+                            ? "bg-white border-[#E76F51]/30"
+                            : "bg-[#FFFDF8] border-[#ECE7E1]"
+                        }`}
+                      >
                         {renderCategoryIcon(cat.icon, isActive)}
                       </div>
                       <div className="leading-tight">
                         <span className="text-[#E76F51] text-[9px] font-mono tracking-widest block uppercase font-bold">
                           Category
                         </span>
-                        <h4 className={`text-sm font-display tracking-tight mt-0.5 ${isActive ? 'font-bold text-[#2D2D2D]' : 'font-medium'}`}>
+                        <h4
+                          className={`text-sm font-display tracking-tight mt-0.5 ${isActive ? "font-bold text-[#2D2D2D]" : "font-medium"}`}
+                        >
                           {cat.label}
                         </h4>
                       </div>
@@ -123,10 +142,13 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({tableNumber, active
             <div className="mt-auto card-surface p-4 space-y-2">
               <div className="flex items-center gap-2 text-xs font-bold text-[#2D2D2D] font-display">
                 <Info size={14} className="text-[#E76F51]" />
-                <span>Table {tableNumber.toString().padStart(2, '0')} Session</span>
+                <span>
+                  Table {tableNumber.toString().padStart(2, "0")} Session
+                </span>
               </div>
               <p className="text-[11px] text-[#6B7280] leading-relaxed">
-                Browse our menu, customize ingredients, and place your order or call your table steward whenever needed.
+                Browse our menu, customize ingredients, and place your order or
+                call your table steward whenever needed.
               </p>
             </div>
           </motion.div>

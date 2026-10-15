@@ -1,30 +1,67 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { BellRing, CheckCircle2, Loader2, X, User } from 'lucide-react';
-import { useApp } from '../../../context/AppContext';
-import { WaiterRequest } from '../../../types/types';
-import { cancelWaiterRequest, triggerCallWaiter } from '@/src/services/waiter_request.service';
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import { BellRing, CheckCircle2, Loader2, X, User } from "lucide-react";
+import { WaiterRequest } from "../../../types/types";
+import {
+  cancelWaiterRequest,
+  triggerCallWaiter,
+} from "@/src/services/waiter_request.service";
 
-interface WaiterSummonerProps{tableNumber: number,
-   setAllWaiterRequest: React.Dispatch<any>, 
-   waiterRequest: WaiterRequest | null,
-   setWaiterRequest: React.Dispatch<any>
-  }
+interface WaiterSummonerProps {
+  tableNumber: string;
+  setAllWaiterRequest: React.Dispatch<any>;
+  waiterRequest: WaiterRequest | null;
+  setWaiterRequest: React.Dispatch<any>;
+}
 
-export const WaiterSummoner: React.FC<WaiterSummonerProps> = ({tableNumber, setAllWaiterRequest, waiterRequest, setWaiterRequest}) => {
-
-  const [, setSelectedType] = useState<WaiterRequest['type']>('general');
+export const WaiterSummoner: React.FC<WaiterSummonerProps> = ({
+  tableNumber,
+  setAllWaiterRequest,
+  waiterRequest,
+  setWaiterRequest,
+}) => {
+  const [, setSelectedType] = useState<WaiterRequest["type"]>("general");
 
   const CALL_OPTIONS = [
-    { type: 'general', label: 'Call Waiter', desc: 'General help or table service', icon: '🛎️' },
-    { type: 'water', label: 'Request Water', desc: 'Refill clean water carafe', icon: '🥛' },
-    { type: 'tissue', label: 'Request Tissue', desc: 'Sanitizing dry wipes', icon: '🧻' },
-    { type: 'cutlery', label: 'Request Cutlery', desc: 'Forks, spoons or tableware', icon: '🍽️' },
-    { type: 'cleaning', label: 'Request Cleaning', desc: 'Table wiping or clearing', icon: '🧹' },
-    { type: 'bill', label: 'Request Bill', desc: 'Initiate tableside checkout', icon: '💳' },
+    {
+      type: "general",
+      label: "Call Waiter",
+      desc: "General help or table service",
+      icon: "🛎️",
+    },
+    {
+      type: "water",
+      label: "Request Water",
+      desc: "Refill clean water carafe",
+      icon: "🥛",
+    },
+    {
+      type: "tissue",
+      label: "Request Tissue",
+      desc: "Sanitizing dry wipes",
+      icon: "🧻",
+    },
+    {
+      type: "cutlery",
+      label: "Request Cutlery",
+      desc: "Forks, spoons or tableware",
+      icon: "🍽️",
+    },
+    {
+      type: "cleaning",
+      label: "Request Cleaning",
+      desc: "Table wiping or clearing",
+      icon: "🧹",
+    },
+    {
+      type: "bill",
+      label: "Request Bill",
+      desc: "Initiate tableside checkout",
+      icon: "💳",
+    },
   ] as const;
 
-  const handleSummon = (type: WaiterRequest['type'], label: string) => {
+  const handleSummon = (type: WaiterRequest["type"], label: string) => {
     setSelectedType(type);
     triggerCallWaiter(type, label, tableNumber, setAllWaiterRequest);
   };
@@ -37,15 +74,20 @@ export const WaiterSummoner: React.FC<WaiterSummonerProps> = ({tableNumber, setA
       )}
 
       <div className="flex items-center gap-3 mb-4">
-        <div className={`p-3 rounded-2xl ${waiterRequest ? 'bg-[#E76F51]/10 text-[#E76F51]' : 'bg-[#FFFDF8] text-[#6B7280]'} border border-[#ECE7E1] transition-colors`}>
-          <BellRing size={20} className={waiterRequest ? 'animate-pulse' : ''} />
+        <div
+          className={`p-3 rounded-2xl ${waiterRequest ? "bg-[#E76F51]/10 text-[#E76F51]" : "bg-[#FFFDF8] text-[#6B7280]"} border border-[#ECE7E1] transition-colors`}
+        >
+          <BellRing
+            size={20}
+            className={waiterRequest ? "animate-pulse" : ""}
+          />
         </div>
         <div>
           <h2 className="text-lg font-display font-bold text-[#2D2D2D] tracking-tight leading-none mb-1">
             Table Steward Pager
           </h2>
           <p className="text-[10px] uppercase font-mono font-bold text-[#6B7280]">
-            Assigned to Table {tableNumber.toString().padStart(2, '0')}
+            Assigned to Table {tableNumber.toString().padStart(2, "0")}
           </p>
         </div>
       </div>
@@ -61,10 +103,14 @@ export const WaiterSummoner: React.FC<WaiterSummonerProps> = ({tableNumber, setA
             className="space-y-3"
           >
             <p className="text-xs text-[#6B7280] leading-relaxed mb-3">
-              Need assistance? Select a quick service request below, and a dining steward will visit your table shortly.
+              Need assistance? Select a quick service request below, and a
+              dining steward will visit your table shortly.
             </p>
 
-            <div className="grid grid-cols-2 gap-2.5" id="summoner-options-grid">
+            <div
+              className="grid grid-cols-2 gap-2.5"
+              id="summoner-options-grid"
+            >
               {CALL_OPTIONS.map((opt) => (
                 <button
                   key={opt.type}
@@ -105,9 +151,15 @@ export const WaiterSummoner: React.FC<WaiterSummonerProps> = ({tableNumber, setA
                   Calling Table Host...
                 </h3>
               </div>
-              
+
               <button
-                onClick={()=>cancelWaiterRequest(tableNumber, setAllWaiterRequest, setWaiterRequest)}
+                onClick={() =>
+                  cancelWaiterRequest(
+                    tableNumber,
+                    setAllWaiterRequest,
+                    setWaiterRequest,
+                  )
+                }
                 className="btn-icon p-1.5 rounded-full"
                 title="Cancel Service Call"
                 id="cancel-summon"
@@ -117,18 +169,28 @@ export const WaiterSummoner: React.FC<WaiterSummonerProps> = ({tableNumber, setA
             </div>
 
             {/* Simulated Live Timeline Steps */}
-            <div className="space-y-4 relative pl-3.5 before:absolute before:left-1 before:top-2 before:bottom-2 before:w-[1px] before:bg-[#ECE7E1]" id="summon-timeline">
+            <div
+              className="space-y-4 relative pl-3.5 before:absolute before:left-1 before:top-2 before:bottom-2 before:w-[1px] before:bg-[#ECE7E1]"
+              id="summon-timeline"
+            >
               {/* Point 1: Request Transmitted */}
               <div className="relative">
                 <span className="absolute -left-[17px] top-0.5 w-2 h-2 rounded-full bg-[#2A9D8F] ring-4 ring-[#2A9D8F]/10" />
                 <div className="leading-tight">
-                  <p className="text-xs font-bold text-[#2D2D2D]">Request Dispatched</p>
-                  <p className="text-[10px] text-[#6B7280]">Table {tableNumber.toString().padStart(2, '0')} service beacon is active</p>
+                  <p className="text-xs font-bold text-[#2D2D2D]">
+                    Request Dispatched
+                  </p>
+                  <p className="text-[10px] text-[#6B7280]">
+                    Table {tableNumber.toString().padStart(2, "0")} service
+                    beacon is active
+                  </p>
                 </div>
               </div>
 
               {/* Point 2: Waiter Assigned */}
-              {['assigned', 'on_the_way', 'resolved'].includes(waiterRequest.status) ? (
+              {["assigned", "on_the_way", "resolved"].includes(
+                waiterRequest.status,
+              ) ? (
                 <div className="relative">
                   <span className="absolute -left-[17px] top-0.5 w-2 h-2 rounded-full bg-[#2A9D8F] ring-4 ring-[#2A9D8F]/10" />
                   <div className="leading-tight">
@@ -136,7 +198,9 @@ export const WaiterSummoner: React.FC<WaiterSummonerProps> = ({tableNumber, setA
                       <span>Assigned to {waiterRequest.waiterName}</span>
                       <User size={10} className="text-[#E76F51]" />
                     </p>
-                    <p className="text-[10px] text-[#6B7280]">Dining staff partner has been assigned</p>
+                    <p className="text-[10px] text-[#6B7280]">
+                      Dining staff partner has been assigned
+                    </p>
                   </div>
                 </div>
               ) : (
@@ -145,34 +209,47 @@ export const WaiterSummoner: React.FC<WaiterSummonerProps> = ({tableNumber, setA
                   <div className="leading-tight opacity-50">
                     <p className="text-xs font-medium text-[#2D2D2D] flex items-center gap-1">
                       <span>Assigning Steward...</span>
-                      <Loader2 size={10} className="animate-spin text-[#E76F51]" />
+                      <Loader2
+                        size={10}
+                        className="animate-spin text-[#E76F51]"
+                      />
                     </p>
-                    <p className="text-[10px] text-[#6B7280]">Locating nearest available staff partner</p>
+                    <p className="text-[10px] text-[#6B7280]">
+                      Locating nearest available staff partner
+                    </p>
                   </div>
                 </div>
               )}
 
               {/* Point 3: On The Way */}
-              {['on_the_way', 'resolved'].includes(waiterRequest.status) ? (
+              {["on_the_way", "resolved"].includes(waiterRequest.status) ? (
                 <div className="relative">
                   <span className="absolute -left-[17px] top-0.5 w-2 h-2 rounded-full bg-[#2A9D8F] ring-4 ring-[#2A9D8F]/10" />
                   <div className="leading-tight">
-                    <p className="text-xs font-bold text-[#2D2D2D]">Steward en-route</p>
-                    <p className="text-[10px] text-[#6B7280]">ETA: {waiterRequest.etaString || '30 sec'}</p>
+                    <p className="text-xs font-bold text-[#2D2D2D]">
+                      Steward en-route
+                    </p>
+                    <p className="text-[10px] text-[#6B7280]">
+                      ETA: {waiterRequest.etaString || "30 sec"}
+                    </p>
                   </div>
                 </div>
               ) : (
                 <div className="relative">
                   <span className="absolute -left-[17px] top-0.5 w-2 h-2 rounded-full bg-[#ECE7E1]" />
                   <div className="leading-tight opacity-50">
-                    <p className="text-xs font-medium text-[#2D2D2D]">Arriving Soon</p>
-                    <p className="text-[10px] text-[#6B7280]">Steward moving to Table {tableNumber}</p>
+                    <p className="text-xs font-medium text-[#2D2D2D]">
+                      Arriving Soon
+                    </p>
+                    <p className="text-[10px] text-[#6B7280]">
+                      Steward moving to Table {tableNumber}
+                    </p>
                   </div>
                 </div>
               )}
 
               {/* Point 4: Completed / Resolved */}
-              {waiterRequest.status === 'resolved' ? (
+              {waiterRequest.status === "resolved" ? (
                 <div className="relative">
                   <span className="absolute -left-[17px] top-0.5 w-2.5 h-2.5 rounded-full bg-[#E76F51] ring-4 ring-[#E76F51]/15 border border-white animate-bounce" />
                   <div className="leading-tight">
@@ -180,18 +257,26 @@ export const WaiterSummoner: React.FC<WaiterSummonerProps> = ({tableNumber, setA
                       <span>Steward Arrived</span>
                       <CheckCircle2 size={11} className="text-[#E76F51]" />
                     </p>
-                    <p className="text-[10px] text-[#6B7280]">Steward is at your tableside.</p>
+                    <p className="text-[10px] text-[#6B7280]">
+                      Steward is at your tableside.
+                    </p>
                   </div>
                 </div>
               ) : null}
             </div>
 
             {/* Prompt dismiss option when completed */}
-            {waiterRequest.status === 'resolved' && (
+            {waiterRequest.status === "resolved" && (
               <motion.button
                 initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
-                onClick={()=>cancelWaiterRequest(tableNumber, setAllWaiterRequest, setWaiterRequest)}
+                onClick={() =>
+                  cancelWaiterRequest(
+                    tableNumber,
+                    setAllWaiterRequest,
+                    setWaiterRequest,
+                  )
+                }
                 className="btn-outline mt-4 w-full py-2 text-xs text-center"
                 id="dismiss-resolved-call"
               >

@@ -1,63 +1,71 @@
-import { useState } from "react";
-import { CartItem } from "../types/types";
-import { MenuItem } from "../types/menuData";
+import { useState } from 'react';
+import { CartItem } from '../types/types';
+import { MenuItem } from '../types/menuData';
 
-function useCart(){
+/** Customer cart is local UI state; the backend receives it only at order submission. */
+function useCart() {
+  const [cart, setCart] = useState<CartItem[]>([]);
 
-    const [cart, setCart] = useState<CartItem[]>([]);
+  const addToCart = (
+    item: MenuItem,
+    quantity: number,
+    excludedIngredients: string[],
+    addedIngredients: string[],
+    customInstructions: string,
+  ) => {
+    const normalizedExcluded = [...excludedIngredients].sort();
+    const normalizedAdded = [...addedIngredients].sort();
 
+    setCart((previousCart) => {
+      const existingIndex = previousCart.findIndex((cartItem) =>
+        cartItem.menuItem.id === item.id &&
+        JSON.stringify([...cartItem.excludedIngredients].sort()) === JSON.stringify(normalizedExcluded) &&
+        JSON.stringify([...cartItem.addedIngredients].sort()) === JSON.stringify(normalizedAdded) &&
+        cartItem.customInstructions.trim().toLowerCase() === customInstructions.trim().toLowerCase(),
+      );
 
+      if (existingIndex >= 0) {
+        return previousCart.map((cartItem, index) =>
+          index === existingIndex
+            ? { ...cartItem, quantity: cartItem.quantity + quantity }
+            : cartItem,
+        );
+      }
 
-    const addToCart = (item: MenuItem, quantity: number, excluded: string[], added: string[], notes: string) => {
-        setCart((prevCart) => {
-              const existingIndex = prevCart.findIndex(
-                (cartItem) =>
-                  cartItem.menuItem.id === item.id &&
-                  JSON.stringify(cartItem.excludedIngredients.sort()) === JSON.stringify(excluded.sort()) &&
-                  JSON.stringify(cartItem.addedIngredients.sort()) === JSON.stringify(added.sort()) &&
-                  cartItem.customInstructions.trim().toLowerCase() === notes.trim().toLowerCase()
-              );
-        
-              if (existingIndex > -1) {
-                const updated = [...prevCart];
-                updated[existingIndex].quantity += quantity;
-                return updated;
-              }
-        
-              const newItem: CartItem = {
-                id: `${item.id}-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-                menuItem: item,
-                quantity,
-                excludedIngredients: excluded,
-                addedIngredients: added,
-                customInstructions: notes,
-              };
-        
-              return [...prevCart, newItem];
-            });
-    };
+      return [
+        ...previousCart,
+        {
+          id: `${item.id}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          menuItem: item,
+          quantity,
+          excludedIngredients: [...excludedIngredients],
+          addedIngredients: [...addedIngredients],
+          customInstructions,
+        },
+      ];
+    });
+  };
 
-    const removeFromCart = (cartItemId: string) => {
-          setCart((prevCart) => prevCart.filter((item) => item.id !== cartItemId));
-    };
+  const removeFromCart = (cartItemId: string) => {
+    setCart((previousCart) => previousCart.filter((item) => item.id !== cartItemId));
+  };
 
-    const updateCartItemQuantity = (cartItemId: string, quantity: number) => {
-         if (quantity <= 0) {
+  const updateCartItemQuantity = (cartItemId: string, quantity: number) => {
+    if (quantity <= 0) {
       removeFromCart(cartItemId);
       return;
     }
-    setCart((prevCart) =>
-      prevCart.map((item) => (item.id === cartItemId ? { ...item, quantity } : item))
+
+    setCart((previousCart) =>
+      previousCart.map((item) =>
+        item.id === cartItemId ? { ...item, quantity } : item,
+      ),
     );
-    };
+  };
 
-    const clearCart = () => {
-         setCart([]);
-    };
+  const clearCart = () => setCart([]);
 
-
-    return {cart, addToCart, removeFromCart, updateCartItemQuantity, clearCart};
-
-};
+  return { cart, addToCart, removeFromCart, updateCartItemQuantity, clearCart };
+}
 
 export default useCart;

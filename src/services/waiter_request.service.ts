@@ -1,87 +1,91 @@
+import type { Dispatch, SetStateAction } from "react";
 import { WaiterRequest } from "../types/types";
 
-// Waiter summoning triggered by Guest/Customer
-const triggerCallWaiter = (type: WaiterRequest['type'], label: string, tableNumber: number, setAllWaiterRequests: React.Dispatch<any>) => {
-    const reqId = `req-${Date.now()}`;
-        const newRequest: WaiterRequest = {
-          id: reqId,
-          type,
-          label,
-          tableNumber,
-          status: 'requested',
-        };
-    
-        setAllWaiterRequests((prev: any) => [...prev, newRequest]);
-    
-        // Simulate auto-assigned waiter background flow for active guest visual transitions
-        setTimeout(() => {
-          setAllWaiterRequests((currentList: any) => {
-            return currentList.map((req: any) => {
-              if (req.id === reqId && req.status === 'requested') {
-                const waiters = ['Alex Thorne', 'Yuki Sato', 'Elena Rostova', 'Devi Patel', 'James Sinclair'];
-                const randomWaiter = waiters[Math.floor(Math.random() * waiters.length)];
-                return {
-                  ...req,
-                  status: 'assigned',
-                  waiterName: randomWaiter,
-                  etaString: '1 min',
-                };
-              }
-              return req;
-            });
-          });
-        }, 2500);
-    
-        setTimeout(() => {
-          setAllWaiterRequests((currentList: any) => {
-            return currentList.map((req: any) => {
-              if (req.id === reqId && req.status === 'assigned') {
-                return {
-                  ...req,
-                  status: 'on_the_way',
-                  etaString: '30 sec',
-                };
-              }
-              return req;
-            });
-          });
-        }, 5500);
-    
-        setTimeout(() => {
-          setAllWaiterRequests((currentList: any) => {
-            return currentList.map((req: any) => {
-              if (req.id === reqId && req.status === 'on_the_way') {
-                return {
-                  ...req,
-                  status: 'resolved',
-                };
-              }
-              return req;
-            });
-          });
-        }, 12000);
+/**
+ * Legacy local helper kept for the current UI until the customer waiter-request
+ * endpoint is wired. Network code belongs in a service; the component owns state.
+ */
+export function createLocalWaiterRequest(
+  type: WaiterRequest["type"],
+  label: string,
+  tableNumber: string,
+): WaiterRequest {
+  return {
+    id: `local-${Date.now()}`,
+    type,
+    label,
+    tableNumber,
+    status: "requested",
+  };
+}
+
+export function removeLocalWaiterRequest(
+  requests: WaiterRequest[],
+  tableNumber: string,
+): WaiterRequest[] {
+  return requests.filter((request) => request.tableNumber !== tableNumber);
+}
+
+export function assignLocalWaiterRequest(
+  requests: WaiterRequest[],
+  requestId: string,
+  waiterName: string,
+): WaiterRequest[] {
+  return requests.map((request) =>
+    request.id === requestId
+      ? {
+          ...request,
+          status: "assigned",
+          waiterName,
+          etaString: "Inside Dining Area",
+        }
+      : request,
+  );
+}
+
+export function resolveLocalWaiterRequest(
+  requests: WaiterRequest[],
+  requestId: string,
+): WaiterRequest[] {
+  return requests.filter((request) => request.id !== requestId);
+}
+
+// Backward-compatible exports for components that have not yet migrated to
+// the API-backed waiter request service.
+export const triggerCallWaiter = (
+  type: WaiterRequest["type"],
+  label: string,
+  tableNumber: string,
+  setRequests: Dispatch<SetStateAction<WaiterRequest[]>>,
+) => {
+  setRequests((previous) => [
+    ...previous,
+    createLocalWaiterRequest(type, label, tableNumber),
+  ]);
 };
 
- const cancelWaiterRequest = (tableNumber: number,setAllWaiterRequests: CallableFunction, setWaiterRequest: CallableFunction) => {
-     // Remove or resolve it
-    setAllWaiterRequests((prev:any) => prev.filter((r:any) => r.tableNumber !== tableNumber));
-    setWaiterRequest(null);
- };
-
-  // Staff explicit assignments
- const assignWaiterToCall = (requestId: string, waiterName: string, setAllWaiterRequests: CallableFunction) => {
-    setAllWaiterRequests((prev: any) =>
-      prev.map((r: any) =>
-        r.id === requestId
-          ? { ...r, status: 'assigned', waiterName, etaString: 'Inside Dining Area' }
-          : r
-      )
-    );
- };
-   
-
-const  resolveWaiterCall = (requestId: string, setAllWaiterRequests: CallableFunction) => {
-     setAllWaiterRequests((prev:any) => prev.filter((r:any) => r.id !== requestId));
+export const cancelWaiterRequest = (
+  tableNumber: string,
+  setRequests: Dispatch<SetStateAction<WaiterRequest[]>>,
+  setActiveRequest: Dispatch<SetStateAction<WaiterRequest | null>>,
+) => {
+  setRequests((previous) => removeLocalWaiterRequest(previous, tableNumber));
+  setActiveRequest(null);
 };
 
-export {triggerCallWaiter, cancelWaiterRequest, assignWaiterToCall, resolveWaiterCall};
+export const assignWaiterToCall = (
+  requestId: string,
+  waiterName: string,
+  setRequests: Dispatch<SetStateAction<WaiterRequest[]>>,
+) => {
+  setRequests((previous) =>
+    assignLocalWaiterRequest(previous, requestId, waiterName),
+  );
+};
+
+export const resolveWaiterCall = (
+  requestId: string,
+  setRequests: Dispatch<SetStateAction<WaiterRequest[]>>,
+) => {
+  setRequests((previous) => resolveLocalWaiterRequest(previous, requestId));
+};
