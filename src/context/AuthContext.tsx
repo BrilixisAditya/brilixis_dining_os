@@ -6,40 +6,44 @@ import {
   ReactNode,
 } from "react";
 
-/* ----------------------------- Types ----------------------------- */
+import { AuthUser, UserRole } from "../types/AuthTypes";
 
-export type UserRole =
-  | "OWNER"
-  | "MANAGER"
-  | "WAITER"
-  | "KITCHEN"
-  | "CUSTOMER";
+import { AuthService } from "../services/auth.service";
 
-export interface AuthUser {
-  id: string;
-  name: string;
-  email?: string;
-  phone?: string;
-  role: UserRole;
-}
+import { clearAuthToken, getAuthToken } from "../services/api/client";
 
 interface AuthContextType {
   user: AuthUser | null;
+
+  role: UserRole | null;
+
   isAuthenticated: boolean;
+
   isLoading: boolean;
 
-  login: () => Promise<void>;
-  logout: () => Promise<void>;
-  refreshSession: () => Promise<void>;
+  /**
+   * Validate the stored token against Laravel
+   * and restore the current user.
+   */
+  refreshSession: () => Promise<UserRole | null>;
 
+  /**
+   * Logout current device.
+   */
+  logout: () => Promise<void>;
+
+  /**
+   * Logout all devices.
+   */
+  logoutAll: () => Promise<void>;
+
+  /**
+   * Check current user's role.
+   */
   hasRole: (role: UserRole) => boolean;
 }
 
-/* ---------------------------- Context ---------------------------- */
-
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-/* ---------------------------- Provider --------------------------- */
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -48,83 +52,146 @@ interface AuthProviderProps {
 function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<AuthUser | null>(null);
 
+  const [role, setRole] = useState<UserRole | null>(null);
+
   const [isLoading, setIsLoading] = useState(true);
 
-  /* ---------------- Initial Session Check ---------------- */
+  /**
+   * Restore the authenticated session.
+   *
+   * IMPORTANT:
+   *
+   * localStorage contains only the token.
+   *
+   * Laravel remains the source of truth
+   * for whether the token is valid.
+   */
+  const refreshSession = async (): Promise<UserRole | null> => {
+    const token = getAuthToken();
 
+    /*
+     * No persisted token means there is
+     * no authenticated session.
+     */
+    if (!token) {
+      setUser(null);
+      setRole(null);
+      setIsLoading(false);
+
+      return null;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const response = await AuthService.checkMe();
+
+      /*
+       * Token exists locally but Laravel
+       * says the session is not valid.
+       */
+      if (!response.success || !response.data?.user) {
+        clearAuthToken();
+
+        setUser(null);
+        setRole(null);
+
+        return null;
+      }
+
+      setUser(response.data.user);
+
+      const authenticatedRole = response.data.role ?? null;
+
+      setRole(authenticatedRole);
+
+      return authenticatedRole;
+    } catch (error) {
+      console.error("Session validation failed:", error);
+
+      /*
+       * check-me failed. Treat the local
+       * authentication session as invalid.
+       */
+      clearAuthToken();
+
+      setUser(null);
+      setRole(null);
+
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /**
+   * Restore session when the application starts.
+   */
   useEffect(() => {
-    refreshSession();
+    void refreshSession();
   }, []);
 
-  /* ---------------- Login ---------------- */
-
-  const login = async () => {
+  /**
+   * Logout current device.
+   */
+  const logout = async (): Promise<void> => {
     try {
-      setIsLoading(true);
-
-      // TODO:
-      // Call auth.service.ts
-      // const response = await authService.login(...);
-
-      // Temporary Demo User
-      setUser({
-        id: "1",
-        name: "Restaurant Manager",
-        email: "manager@restaurant.com",
-        role: "MANAGER",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  /* ---------------- Logout ---------------- */
-
-  const logout = async () => {
-    try {
-      // TODO:
-      // await authService.logout();
-
-      setUser(null);
+      /*
+       * apiRequest() automatically adds
+       * the current Bearer token.
+       */
+      await AuthService.logout();
     } catch (error) {
-      console.error(error);
-    }
-  };
-
-  /* ---------------- Refresh Session ---------------- */
-
-  const refreshSession = async () => {
-    try {
-      setIsLoading(true);
-
-      // TODO:
-      // const user = await authService.refreshSession();
-
-      // Demo
-      setUser(null);
-    } catch (error) {
-      setUser(null);
+      console.error("Logout request failed:", error);
     } finally {
-      setIsLoading(false);
+      /*
+       * Even if the network request fails,
+       * the browser must stop considering
+       * this user authenticated.
+       */
+      clearAuthToken();
+
+      setUser(null);
+      setRole(null);
     }
   };
 
-  /* ---------------- Role Helper ---------------- */
+  /**
+   * Logout from all devices.
+   */
+  const logoutAll = async (): Promise<void> => {
+    try {
+      await AuthService.logoutAll();
+    } catch (error) {
+      console.error("Logout-all request failed:", error);
+    } finally {
+      clearAuthToken();
 
-  const hasRole = (role: UserRole) => {
-    return user?.role === role;
+      setUser(null);
+      setRole(null);
+    }
+  };
+
+  const hasRole = (expectedRole: UserRole): boolean => {
+    return role === expectedRole;
   };
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        isAuthenticated: !!user,
+
+        role,
+
+        isAuthenticated: user !== null,
+
         isLoading,
 
-        login,
-        logout,
         refreshSession,
+
+        logout,
+
+        logoutAll,
 
         hasRole,
       }}
@@ -133,8 +200,6 @@ function AuthProvider({ children }: AuthProviderProps) {
     </AuthContext.Provider>
   );
 }
-
-/* ----------------------------- Hook ----------------------------- */
 
 function useAuth() {
   const context = useContext(AuthContext);
