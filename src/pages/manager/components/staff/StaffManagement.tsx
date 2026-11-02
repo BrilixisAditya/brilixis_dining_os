@@ -1,5 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Edit3, Plus, RefreshCw, Trash2, User, X } from "lucide-react";
+import {
+  AlertTriangle,
+  Edit3,
+  Plus,
+  RefreshCw,
+  Trash2,
+  User,
+  X,
+} from "lucide-react";
 
 import { useAuth } from "@/src/context/AuthContext";
 import { getApiErrorMessage } from "@/src/services/api/client";
@@ -17,6 +25,7 @@ import {
   StaffMember,
   StaffRole,
 } from "@/src/types/staff";
+import { DemoInvitationDialog } from "@/src/features/user-invitation";
 
 interface StaffOrderSummary {
   status: string;
@@ -86,6 +95,12 @@ export default function StaffManagement({
   const [formError, setFormError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [busyStaffId, setBusyStaffId] = useState<string | null>(null);
+  const [createdInvitation, setCreatedInvitation] = useState<{
+    fullname: string;
+    email: string;
+    username: string;
+    token: string;
+  } | null>(null);
 
   const refreshStaff = useCallback(async () => {
     setIsLoading(true);
@@ -115,7 +130,13 @@ export default function StaffManagement({
     if (!term) return staffMembers;
 
     return staffMembers.filter((member) =>
-      [member.fullname, member.username, member.email, member.phone_no, member.role]
+      [
+        member.fullname,
+        member.username,
+        member.email,
+        member.phone_no,
+        member.role,
+      ]
         .join(" ")
         .toLowerCase()
         .includes(term),
@@ -124,8 +145,7 @@ export default function StaffManagement({
 
   const activeShiftCount = staffMembers.filter(
     (member) =>
-      member.status === "ACTIVE" &&
-      member.availability_status === "AVAILABLE",
+      member.status === "ACTIVE" && member.availability_status === "AVAILABLE",
   ).length;
 
   const openAddModal = () => {
@@ -163,7 +183,9 @@ export default function StaffManagement({
     const contactNo = form.contact_no.trim();
 
     if (!fullname || !contactNo || (!editingStaff && !email)) {
-      setFormError("Please complete the required name, email and phone fields.");
+      setFormError(
+        "Please complete the required name, email and phone fields.",
+      );
       return;
     }
 
@@ -183,13 +205,28 @@ export default function StaffManagement({
         });
         onNotify(`Updated staff record for ${fullname}.`);
       } else {
-        await createStaffMember({
+        const created = await createStaffMember({
           fullname,
           email,
           contact_no: contactNo,
           role: form.role,
         });
-        onNotify(`Created staff account for ${fullname}. The account starts pending setup.`);
+
+        if (created.invitation_token && created.data?.username) {
+          setCreatedInvitation({
+            fullname,
+            email,
+            username: created.data.username,
+            token: created.invitation_token,
+          });
+          onNotify(
+            `Created staff account for ${fullname}. The account starts pending setup.`,
+          );
+        } else {
+          onNotify(
+            `Created staff account for ${fullname}, but the API response did not include an invitation token. Check the Network response before creating another account.`,
+          );
+        }
       }
 
       setIsModalOpen(false);
@@ -204,6 +241,10 @@ export default function StaffManagement({
     }
   };
 
+  const handleCloseInvitation = () => {
+    setCreatedInvitation(null);
+  };
+
   const handleAvailabilityChange = async (member: StaffMember) => {
     if (member.status !== "ACTIVE" || busyStaffId) return;
 
@@ -214,9 +255,14 @@ export default function StaffManagement({
       setBusyStaffId(member.id);
       await updateStaffAvailabilityStatus(member.id, nextStatus);
       await refreshStaff();
-      onNotify(`${member.fullname} is now ${AVAILABILITY_LABELS[nextStatus].toLowerCase()}.`);
+      onNotify(
+        `${member.fullname} is now ${AVAILABILITY_LABELS[nextStatus].toLowerCase()}.`,
+      );
     } catch (error) {
-      const message = getApiErrorMessage(error, "Unable to change shift availability.");
+      const message = getApiErrorMessage(
+        error,
+        "Unable to change shift availability.",
+      );
       onNotify(message);
       console.error("Staff availability update failed:", error);
     } finally {
@@ -225,7 +271,7 @@ export default function StaffManagement({
   };
 
   const handleAccountStatusChange = async (member: StaffMember) => {
-    if (!['ACTIVE', 'INACTIVE'].includes(member.status) || busyStaffId) return;
+    if (!["ACTIVE", "INACTIVE"].includes(member.status) || busyStaffId) return;
 
     const nextStatus: "ACTIVE" | "INACTIVE" =
       member.status === "ACTIVE" ? "INACTIVE" : "ACTIVE";
@@ -234,9 +280,14 @@ export default function StaffManagement({
       setBusyStaffId(member.id);
       await updateStaffAccountStatus(member.id, nextStatus);
       await refreshStaff();
-      onNotify(`${member.fullname}'s account is now ${nextStatus.toLowerCase()}.`);
+      onNotify(
+        `${member.fullname}'s account is now ${nextStatus.toLowerCase()}.`,
+      );
     } catch (error) {
-      const message = getApiErrorMessage(error, "Unable to change the account status.");
+      const message = getApiErrorMessage(
+        error,
+        "Unable to change the account status.",
+      );
       onNotify(message);
       console.error("Staff account-status update failed:", error);
     } finally {
@@ -254,7 +305,10 @@ export default function StaffManagement({
       await refreshStaff();
       onNotify(`Removed staff member "${member.fullname}".`);
     } catch (error) {
-      const message = getApiErrorMessage(error, "Unable to remove staff member.");
+      const message = getApiErrorMessage(
+        error,
+        "Unable to remove staff member.",
+      );
       onNotify(message);
       console.error("Staff deletion failed:", error);
     } finally {
@@ -279,7 +333,8 @@ export default function StaffManagement({
 
         <div className="flex items-center gap-3 flex-wrap">
           <div className="text-xs bg-[#FAF9F6] border border-[#E8E5DD] px-3 py-1.5 rounded-xl text-[#8C7A6B]">
-            Active shifts: <span className="text-[#1F2226] font-bold">{activeShiftCount}</span>
+            Active shifts:{" "}
+            <span className="text-[#1F2226] font-bold">{activeShiftCount}</span>
           </div>
           <button
             type="button"
@@ -318,10 +373,16 @@ export default function StaffManagement({
             <p className="text-xs font-bold">Staff data could not be loaded</p>
             <p className="text-xs mt-1">{loadError}</p>
             <p className="text-[10px] mt-2">
-              This may indicate an API route, authorization or response-format mismatch. The backend has not been changed by this frontend module.
+              This may indicate an API route, authorization or response-format
+              mismatch. The backend has not been changed by this frontend
+              module.
             </p>
           </div>
-          <button type="button" onClick={() => void refreshStaff()} className="text-xs font-bold underline">
+          <button
+            type="button"
+            onClick={() => void refreshStaff()}
+            className="text-xs font-bold underline"
+          >
             Retry
           </button>
         </div>
@@ -335,19 +396,33 @@ export default function StaffManagement({
         <div className="bg-white border border-[#E8E5DD] rounded-[2rem] py-16 text-center">
           <User size={24} className="mx-auto mb-3 text-[#8C7A6B]" />
           <p className="text-sm font-display font-bold text-[#1F2226]">
-            {staffMembers.length === 0 ? "No staff members found" : "No matching staff members"}
+            {staffMembers.length === 0
+              ? "No staff members found"
+              : "No matching staff members"}
           </p>
           <p className="text-xs text-[#8C7A6B] mt-1">
-            {staffMembers.length === 0 ? "Create a staff account to get started." : "Try another search term."}
+            {staffMembers.length === 0
+              ? "Create a staff account to get started."
+              : "Try another search term."}
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="staff-shifts-grid">
+        <div
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+          id="staff-shifts-grid"
+        >
           {filteredStaff.map((member) => {
             const isBusy = busyStaffId === member.id;
             const assignedTables = allOrders
-              .filter((order) => order.status !== "paid" && order.waiterName === member.fullname)
-              .map((order) => `TBL ${order.tableNumber.toString().padStart(2, "0")}`);
+              .filter(
+                (order) =>
+                  order.status !== "paid" &&
+                  order.waiterName === member.fullname,
+              )
+              .map(
+                (order) =>
+                  `TBL ${order.tableNumber.toString().padStart(2, "0")}`,
+              );
 
             return (
               <div
@@ -361,7 +436,9 @@ export default function StaffManagement({
                         <User size={15} />
                       </div>
                       <div className="truncate">
-                        <h4 className="text-sm font-display font-bold text-[#1F2226] truncate">{member.fullname}</h4>
+                        <h4 className="text-sm font-display font-bold text-[#1F2226] truncate">
+                          {member.fullname}
+                        </h4>
                         <p className="text-[10px] text-[#8C7A6B] font-mono leading-none mt-0.5 truncate">
                           {ROLE_LABELS[member.role]} · {member.username}
                         </p>
@@ -389,37 +466,56 @@ export default function StaffManagement({
                   </div>
 
                   <div className="mt-3 flex flex-wrap gap-1.5">
-                    <span className={`text-[8px] font-mono tracking-wider font-extrabold px-2.5 py-1 rounded-full uppercase ${member.status === "ACTIVE" ? "bg-emerald-100 text-emerald-800" : member.status === "PENDING" ? "bg-amber-100 text-amber-800" : "bg-neutral-200 text-neutral-700"}`}>
+                    <span
+                      className={`text-[8px] font-mono tracking-wider font-extrabold px-2.5 py-1 rounded-full uppercase ${member.status === "ACTIVE" ? "bg-emerald-100 text-emerald-800" : member.status === "PENDING" ? "bg-amber-100 text-amber-800" : "bg-neutral-200 text-neutral-700"}`}
+                    >
                       {ACCOUNT_STATUS_LABELS[member.status]}
                     </span>
-                    <span className={`text-[8px] font-mono tracking-wider font-extrabold px-2.5 py-1 rounded-full uppercase ${member.availability_status === "AVAILABLE" ? "bg-emerald-100 text-emerald-800" : member.availability_status === "ON_BREAK" ? "bg-amber-100 text-amber-800" : "bg-neutral-200 text-neutral-700"}`}>
+                    <span
+                      className={`text-[8px] font-mono tracking-wider font-extrabold px-2.5 py-1 rounded-full uppercase ${member.availability_status === "AVAILABLE" ? "bg-emerald-100 text-emerald-800" : member.availability_status === "ON_BREAK" ? "bg-amber-100 text-amber-800" : "bg-neutral-200 text-neutral-700"}`}
+                    >
                       {AVAILABILITY_LABELS[member.availability_status]}
                     </span>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 mt-4 pt-4 border-t border-[#FAF9F6]">
                     <div className="bg-[#FAF9F6] border border-[#E8E5DD] rounded-xl p-2 min-w-0">
-                      <span className="text-[8px] font-mono text-[#8C7A6B] block uppercase">Phone</span>
-                      <span className="text-[10px] font-mono font-bold text-[#2D2D2D] truncate block">{member.phone_no || "N/A"}</span>
+                      <span className="text-[8px] font-mono text-[#8C7A6B] block uppercase">
+                        Phone
+                      </span>
+                      <span className="text-[10px] font-mono font-bold text-[#2D2D2D] truncate block">
+                        {member.phone_no || "N/A"}
+                      </span>
                     </div>
                     <div className="bg-[#FAF9F6] border border-[#E8E5DD] rounded-xl p-2 min-w-0">
-                      <span className="text-[8px] font-mono text-[#8C7A6B] block uppercase">Email</span>
-                      <span className="text-[10px] font-mono font-bold text-[#2D2D2D] truncate block">{member.email || "N/A"}</span>
+                      <span className="text-[8px] font-mono text-[#8C7A6B] block uppercase">
+                        Email
+                      </span>
+                      <span className="text-[10px] font-mono font-bold text-[#2D2D2D] truncate block">
+                        {member.email || "N/A"}
+                      </span>
                     </div>
                   </div>
 
                   <div className="p-3 bg-zinc-50/50 border border-zinc-100 rounded-xl mt-3 space-y-1">
-                    <span className="text-[8.5px] font-mono text-neutral-500 uppercase tracking-wider font-bold block">Active Tables Assignment</span>
+                    <span className="text-[8.5px] font-mono text-neutral-500 uppercase tracking-wider font-bold block">
+                      Active Tables Assignment
+                    </span>
                     {assignedTables.length > 0 ? (
                       <div className="flex flex-wrap gap-1 mt-1">
                         {assignedTables.map((tableLabel, index) => (
-                          <span key={`${member.id}-${tableLabel}-${index}`} className="text-[8px] font-mono font-bold bg-[#C83214]/5 border border-[#C83214]/10 text-[#C83214] px-1.5 py-0.5 rounded uppercase">
+                          <span
+                            key={`${member.id}-${tableLabel}-${index}`}
+                            className="text-[8px] font-mono font-bold bg-[#C83214]/5 border border-[#C83214]/10 text-[#C83214] px-1.5 py-0.5 rounded uppercase"
+                          >
                             {tableLabel}
                           </span>
                         ))}
                       </div>
                     ) : (
-                      <span className="text-[9px] text-[#8C7A6B] italic block leading-tight">No active tables assigned right now</span>
+                      <span className="text-[9px] text-[#8C7A6B] italic block leading-tight">
+                        No active tables assigned right now
+                      </span>
                     )}
                   </div>
                 </div>
@@ -429,13 +525,22 @@ export default function StaffManagement({
                     type="button"
                     onClick={() => void handleAvailabilityChange(member)}
                     disabled={member.status !== "ACTIVE" || isBusy}
-                    title={member.status !== "ACTIVE" ? "Availability can be changed after the account is active" : undefined}
+                    title={
+                      member.status !== "ACTIVE"
+                        ? "Availability can be changed after the account is active"
+                        : undefined
+                    }
                     className="py-2 px-3 border rounded-lg text-[9px] uppercase font-mono font-black transition-colors cursor-pointer text-center bg-white hover:bg-[#FAF9F6] border-[#E8E5DD] text-[#8C7A6B] disabled:opacity-40 disabled:cursor-not-allowed"
                   >
-                    {isBusy ? "Saving..." : member.availability_status === "AVAILABLE" ? "Set Break" : "Mark Available"}
+                    {isBusy
+                      ? "Saving..."
+                      : member.availability_status === "AVAILABLE"
+                        ? "Set Break"
+                        : "Mark Available"}
                   </button>
 
-                  {member.status === "ACTIVE" || member.status === "INACTIVE" ? (
+                  {member.status === "ACTIVE" ||
+                  member.status === "INACTIVE" ? (
                     <button
                       type="button"
                       onClick={() => void handleAccountStatusChange(member)}
@@ -446,7 +551,9 @@ export default function StaffManagement({
                     </button>
                   ) : (
                     <div className="py-2 px-3 border border-dashed border-[#E8E5DD] rounded-lg text-[8px] text-center text-[#8C7A6B] flex items-center justify-center">
-                      {member.status === "PENDING" ? "Waiting for account setup" : "Account status locked"}
+                      {member.status === "PENDING"
+                        ? "Waiting for account setup"
+                        : "Account status locked"}
                     </div>
                   )}
                 </div>
@@ -457,8 +564,20 @@ export default function StaffManagement({
       )}
 
       <p className="text-[10px] text-[#8C7A6B] px-1">
-        Performance ratings and bonuses are not connected because the current backend does not provide those operations. This screen does not create fake ratings or bonus records.
+        Performance ratings and bonuses are not connected because the current
+        backend does not provide those operations. This screen does not create
+        fake ratings or bonus records.
       </p>
+
+      {createdInvitation && (
+        <DemoInvitationDialog
+          fullname={createdInvitation.fullname}
+          email={createdInvitation.email}
+          username={createdInvitation.username}
+          token={createdInvitation.token}
+          onClose={handleCloseInvitation}
+        />
+      )}
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
@@ -468,9 +587,18 @@ export default function StaffManagement({
                 <h3 className="text-base font-display font-bold text-[#2D2D2D]">
                   {editingStaff ? "Edit Staff Member" : "Add Staff Member"}
                 </h3>
-                <p className="text-[9px] text-[#8C7A6B] font-mono mt-0.5">Existing Laravel Staff API</p>
+                <p className="text-[9px] text-[#8C7A6B] font-mono mt-0.5">
+                  {editingStaff
+                    ? "Update staff member details"
+                    : "Create a staff account and prepare its invitation"}
+                </p>
               </div>
-              <button type="button" onClick={closeModal} disabled={isSaving} className="p-1 rounded-lg bg-neutral-100 hover:bg-neutral-200 text-neutral-600 cursor-pointer disabled:opacity-50">
+              <button
+                type="button"
+                onClick={closeModal}
+                disabled={isSaving}
+                className="p-1 rounded-lg bg-neutral-100 hover:bg-neutral-200 text-neutral-600 cursor-pointer disabled:opacity-50"
+              >
                 <X size={16} />
               </button>
             </div>
@@ -484,36 +612,102 @@ export default function StaffManagement({
 
             <form onSubmit={handleSaveStaff} className="space-y-3">
               <div>
-                <label className="text-[10px] font-mono font-bold text-[#6B7280] uppercase block mb-1">Full Name *</label>
-                <input type="text" required maxLength={255} value={form.fullname} onChange={(event) => setForm({ ...form, fullname: event.target.value })} placeholder="e.g. Rahul Sharma" className="w-full text-xs bg-[#FFFDF8] border border-[#ECE7E1] rounded-xl px-3 py-2 text-[#2D2D2D] focus:outline-none focus:border-[#E76F51]" />
+                <label className="text-[10px] font-mono font-bold text-[#6B7280] uppercase block mb-1">
+                  Full Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  maxLength={255}
+                  value={form.fullname}
+                  onChange={(event) =>
+                    setForm({ ...form, fullname: event.target.value })
+                  }
+                  placeholder="e.g. Rahul Sharma"
+                  className="w-full text-xs bg-[#FFFDF8] border border-[#ECE7E1] rounded-xl px-3 py-2 text-[#2D2D2D] focus:outline-none focus:border-[#E76F51]"
+                />
               </div>
 
               <div>
-                <label className="text-[10px] font-mono font-bold text-[#6B7280] uppercase block mb-1">Email Address {!editingStaff ? "*" : "(cannot be changed here)"}</label>
-                <input type="email" required={!editingStaff} readOnly={Boolean(editingStaff)} maxLength={255} value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} placeholder="staff@example.com" className="w-full text-xs bg-[#FFFDF8] border border-[#ECE7E1] rounded-xl px-3 py-2 text-[#2D2D2D] focus:outline-none focus:border-[#E76F51] read-only:bg-neutral-100 read-only:text-[#8C7A6B]" />
+                <label className="text-[10px] font-mono font-bold text-[#6B7280] uppercase block mb-1">
+                  Email Address{" "}
+                  {!editingStaff ? "*" : "(cannot be changed here)"}
+                </label>
+                <input
+                  type="email"
+                  required={!editingStaff}
+                  readOnly={Boolean(editingStaff)}
+                  maxLength={255}
+                  value={form.email}
+                  onChange={(event) =>
+                    setForm({ ...form, email: event.target.value })
+                  }
+                  placeholder="staff@example.com"
+                  className="w-full text-xs bg-[#FFFDF8] border border-[#ECE7E1] rounded-xl px-3 py-2 text-[#2D2D2D] focus:outline-none focus:border-[#E76F51] read-only:bg-neutral-100 read-only:text-[#8C7A6B]"
+                />
               </div>
 
               <div>
-                <label className="text-[10px] font-mono font-bold text-[#6B7280] uppercase block mb-1">Phone Number *</label>
-                <input type="tel" required maxLength={20} value={form.contact_no} onChange={(event) => setForm({ ...form, contact_no: event.target.value })} placeholder="+91 9876543210" className="w-full text-xs font-mono bg-[#FFFDF8] border border-[#ECE7E1] rounded-xl px-3 py-2 text-[#2D2D2D] focus:outline-none focus:border-[#E76F51]" />
+                <label className="text-[10px] font-mono font-bold text-[#6B7280] uppercase block mb-1">
+                  Phone Number *
+                </label>
+                <input
+                  type="tel"
+                  required
+                  maxLength={20}
+                  value={form.contact_no}
+                  onChange={(event) =>
+                    setForm({ ...form, contact_no: event.target.value })
+                  }
+                  placeholder="+91 9876543210"
+                  className="w-full text-xs font-mono bg-[#FFFDF8] border border-[#ECE7E1] rounded-xl px-3 py-2 text-[#2D2D2D] focus:outline-none focus:border-[#E76F51]"
+                />
               </div>
 
               <div>
-                <label className="text-[10px] font-mono font-bold text-[#6B7280] uppercase block mb-1">Application Role *</label>
-                <select required value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value as StaffRole })} className="w-full text-xs bg-[#FFFDF8] border border-[#ECE7E1] rounded-xl px-3 py-2 text-[#2D2D2D] focus:outline-none focus:border-[#E76F51]">
+                <label className="text-[10px] font-mono font-bold text-[#6B7280] uppercase block mb-1">
+                  Application Role *
+                </label>
+                <select
+                  required
+                  value={form.role}
+                  onChange={(event) =>
+                    setForm({ ...form, role: event.target.value as StaffRole })
+                  }
+                  className="w-full text-xs bg-[#FFFDF8] border border-[#ECE7E1] rounded-xl px-3 py-2 text-[#2D2D2D] focus:outline-none focus:border-[#E76F51]"
+                >
                   {availableRoles.map((staffRole) => (
-                    <option key={staffRole} value={staffRole}>{ROLE_LABELS[staffRole]}</option>
+                    <option key={staffRole} value={staffRole}>
+                      {ROLE_LABELS[staffRole]}
+                    </option>
                   ))}
                 </select>
                 <p className="text-[9px] text-[#8C7A6B] mt-1.5 leading-relaxed">
-                  This role controls which POS portal the member may access. A new account starts as pending and cannot use the portal until its account setup is complete.
+                  This role controls which POS portal the member may access. A
+                  new account starts as pending and cannot use the portal until
+                  its account setup is complete.
                 </p>
               </div>
 
               <div className="flex justify-end gap-2 pt-3 border-t border-[#ECE7E1]">
-                <button type="button" onClick={closeModal} disabled={isSaving} className="px-4 py-2 rounded-xl text-xs font-bold text-neutral-600 bg-neutral-100 hover:bg-neutral-200 cursor-pointer disabled:opacity-50">Cancel</button>
-                <button type="submit" disabled={isSaving} className="px-5 py-2 rounded-xl text-xs font-bold text-white bg-[#E76F51] hover:bg-[#d95d3f] cursor-pointer shadow-brilixis-sm disabled:opacity-50">
-                  {isSaving ? "Saving..." : editingStaff ? "Save Changes" : "Create Account"}
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  disabled={isSaving}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-neutral-600 bg-neutral-100 hover:bg-neutral-200 cursor-pointer disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="px-5 py-2 rounded-xl text-xs font-bold text-white bg-[#E76F51] hover:bg-[#d95d3f] cursor-pointer shadow-brilixis-sm disabled:opacity-50"
+                >
+                  {isSaving
+                    ? "Saving..."
+                    : editingStaff
+                      ? "Save Changes"
+                      : "Create Account"}
                 </button>
               </div>
             </form>

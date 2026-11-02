@@ -20,6 +20,14 @@ interface ApiEnvelope<T> {
   };
 }
 
+interface CreateStaffResponse extends ApiEnvelope<{
+  id: number | string;
+  name: string;
+  username: string;
+}> {
+  invitation_token?: string;
+}
+
 type UnknownRecord = Record<string, unknown>;
 
 const ACCOUNT_STATUS_BY_CODE: Record<number, StaffAccountStatus> = {
@@ -60,7 +68,9 @@ function normalizeAccountStatus(value: unknown): StaffAccountStatus {
     return ACCOUNT_STATUS_BY_CODE[numericValue];
   }
 
-  const normalized = String(value ?? "PENDING").trim().toUpperCase();
+  const normalized = String(value ?? "PENDING")
+    .trim()
+    .toUpperCase();
   if (
     normalized === "ACTIVE" ||
     normalized === "INACTIVE" ||
@@ -97,7 +107,9 @@ function normalizeAvailability(value: unknown): StaffAvailabilityStatus {
 }
 
 function normalizeRole(value: unknown): StaffRole {
-  const normalized = String(value ?? "waiter").trim().toLowerCase();
+  const normalized = String(value ?? "waiter")
+    .trim()
+    .toLowerCase();
   if (normalized === "manager" || normalized === "kitchen") {
     return normalized;
   }
@@ -107,7 +119,9 @@ function normalizeRole(value: unknown): StaffRole {
 function normalizeStaffRecord(value: unknown): StaffMember {
   const record = asRecord(value);
   if (!record) {
-    throw new Error("The staff-list endpoint returned an invalid staff record.");
+    throw new Error(
+      "The staff-list endpoint returned an invalid staff record.",
+    );
   }
 
   // Eloquent normally serializes the `userRole` relationship as `user_role`.
@@ -144,19 +158,16 @@ export async function fetchStaffMembers(): Promise<StaffMember[]> {
 /** POST /api/v1/staff/create-staff */
 export async function createStaffMember(
   payload: CreateStaffPayload,
-): Promise<void> {
-  await apiRequest<ApiEnvelope<{ id: number | string; name: string; username: string }>>(
-    "/api/v1/staff/create-staff",
-    {
-      method: "POST",
-      body: JSON.stringify({
-        fullname: payload.fullname.trim(),
-        email: payload.email.trim().toLowerCase(),
-        contact_no: payload.contact_no.trim(),
-        role: payload.role,
-      }),
-    },
-  );
+): Promise<CreateStaffResponse> {
+  return await apiRequest<CreateStaffResponse>("/api/v1/staff/create-staff", {
+    method: "POST",
+    body: JSON.stringify({
+      fullname: payload.fullname.trim(),
+      email: payload.email.trim().toLowerCase(),
+      contact_no: payload.contact_no.trim(),
+      role: payload.role,
+    }),
+  });
 }
 
 /** PATCH /api/v1/staff/update/{staff} */

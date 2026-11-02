@@ -10,6 +10,7 @@ import { RestaurantRegisterPage } from "@/src/pages/auth/RestaurantRegisterPage"
 import NotFoundPage from "@/src/components/common/NotFoundPage";
 import { GuestOnlyRoute } from "./GuestOnlyRoute";
 import { ProtectedRoute } from "./ProtectedRoute";
+import { InvitationPasswordSetupPage } from "@/src/features/user-invitation";
 
 function AppRouter() {
   return (
@@ -22,6 +23,12 @@ function AppRouter() {
         <Route path="/" element={<CustomerPage />} />
 
         <Route path="/customer" element={<CustomerPage />} />
+
+        {/* Account Invitation and Password Setup route */}
+        <Route
+          path="/accept-invitation"
+          element={<InvitationPasswordSetupPage />}
+        />
 
         {/* ----------------------------------------------------------------- */}
         {/* Guest-only authentication routes                                */}
