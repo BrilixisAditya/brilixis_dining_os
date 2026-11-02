@@ -125,9 +125,7 @@ export function useCustomerMenu(): CustomerMenuState {
        * of truth.
        */
       const items = await getCustomerMenuItems({
-        restaurantId: diningSession.restaurantId,
-
-        tableId: diningSession.tableId,
+        qrToken: token,
       });
 
       /*

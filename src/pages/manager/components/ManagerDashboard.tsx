@@ -62,6 +62,7 @@ import useMenuItems from "@/src/hooks/useMenuItems";
 import ModifierManagement from "./modifiers/ModifierManagement";
 import MenuFormModal, { MenuFormState } from "./menu/MenuFormModal";
 import StaffManagement from "./staff/StaffManagement";
+import DiningSessionsTab from "./dining-sessions/DiningSessionsTab";
 
 const INDIAN_STATES = [
   { name: "Jammu and Kashmir", code: "01" },
@@ -135,6 +136,7 @@ export const ManagerDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<
     | "analytics"
     | "floor"
+    | "sessions"
     | "menu"
     | "categories"
     | "modifiers"
@@ -993,6 +995,17 @@ export const ManagerDashboard: React.FC = () => {
           )}
         </button>
         <button
+          onClick={() => setActiveTab("sessions")}
+          className={`flex items-center gap-2 px-4 py-3 rounded-xl font-display text-xs cursor-pointer transition-all whitespace-nowrap ${
+            activeTab === "sessions"
+              ? "bg-white text-[#E76F51] shadow-brilixis-sm font-bold border border-[#ECE7E1]"
+              : "text-[#6B7280] hover:text-[#2D2D2D]"
+          }`}
+        >
+          <UtensilsCrossed size={14} />
+          Dining Sessions
+        </button>
+        <button
           onClick={() => setActiveTab("menu")}
           className={`flex items-center gap-2 px-4 py-3 rounded-xl font-display text-xs cursor-pointer transition-all whitespace-nowrap ${
             activeTab === "menu"
@@ -1704,6 +1717,9 @@ export const ManagerDashboard: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* Dining Sessions */}
+        {activeTab === "sessions" && <DiningSessionsTab />}
 
         {/* Tab 3: Menu registry stock / out of stock toggle / pricing adjustments */}
         {activeTab === "menu" && (

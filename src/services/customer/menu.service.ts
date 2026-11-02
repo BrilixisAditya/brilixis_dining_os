@@ -10,8 +10,7 @@ interface MenuResponse {
 }
 
 export interface GetMenuItemsParams {
-  restaurantId: string;
-  tableId: string;
+  qrToken: string;
 }
 
 /**
@@ -44,36 +43,29 @@ export const MENU_ITEMS_ENDPOINT =
  *   status: 1
  * }
  */
+export interface GetMenuItemsParams {
+  qrToken: string;
+}
+
 export async function getCustomerMenuItems({
-  restaurantId,
-  tableId,
+  qrToken,
 }: GetMenuItemsParams): Promise<MenuItem[]> {
   const response = await apiRequest<MenuResponse | RawMenuItem[]>(
     MENU_ITEMS_ENDPOINT,
     {
       method: "GET",
       query: {
-        restaurant_id: restaurantId,
-        table_id: tableId,
+        qr_token: qrToken,
       },
     },
   );
 
-  console.log("Customer menu API response:", response);
-
   const rawItems = extractItems(response);
 
-  console.log("Raw menu items:", rawItems);
-
-  const menuItems = rawItems
+  return rawItems
     .map(normalizeMenuItem)
     .filter((item): item is MenuItem => item !== null);
-
-  console.log("Normalized menu items:", menuItems);
-
-  return menuItems;
 }
-
 /**
  * Extract menu items from the response.
  *
