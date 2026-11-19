@@ -1,99 +1,91 @@
 export interface Order {
+  id: string;
 
-    id: string;
+  diningSessionId: string;
 
-    diningSessionId: string;
+  customerId?: string;
 
-    customerId?: string;
+  status: OrderStatus;
 
-    status: OrderStatus;
+  subtotal: number;
 
-    subtotal: number;
+  taxAmount: number;
 
-    taxAmount: number;
+  discountAmount: number;
 
-    discountAmount: number;
+  grandTotal: number;
 
-    grandTotal: number;
-
-    createdAt: string;
+  createdAt: string;
 }
 
 export interface OrderItem {
+  id: string;
 
-    id: string;
+  orderId: string;
 
-    orderId: string;
+  menuItemId: string;
 
-    menuItemId: string;
+  quantity: number;
 
-    quantity: number;
+  basePrice: number;
 
-    basePrice: number;
+  modifierPrice: number;
 
-    modifierPrice: number;
+  lineTotal: number;
 
-    lineTotal: number;
-
-    notes?: string;
+  notes?: string;
 }
-
 
 export interface OrderItemModifier {
+  id: string;
 
-    id: string;
+  orderItemId: string;
 
-    orderItemId: string;
+  modifierItemId: string;
 
-    modifierItemId: string;
+  quantity: number;
 
+  price: number;
+}
+
+interface CreateOrderRequest {
+  qrToken: string;
+  diningSessionId: string;
+  idempotencyKey: string;
+  items: {
+    menuItemId: string;
     quantity: number;
-
-    price: number;
+    notes?: string;
+    modifiers: string[];
+  }[];
+  notes?: string;
 }
-
-export interface CreateOrderRequest {
-
-    diningSessionId: string;
-
-    customerId?: string;
-
-    items: CreateOrderItemRequest[];
-}
-
 
 export interface CreateOrderItemRequest {
-    menuItemId: string;
-
-    quantity: number;
-
-    notes?: string;
-
-    modifiers: CreateOrderItemModifierRequest[];
+  menuItemId: string;
+  quantity: number;
+  notes?: string;
+  modifiers: string[];
 }
-
 
 export interface CreateOrderItemModifierRequest {
-    modifierItemId: string;
+  modifierItemId: string;
 
-    quantity: number;
+  quantity: number;
 }
 
-
-
 export interface UpdateOrderRequest {
+  status?: OrderStatus;
 
-    status?: OrderStatus;
-
-    notes?: string;
+  notes?: string;
 }
 
 export type OrderStatus =
-    | "DRAFT"
-    | "WAITING_CONFIRMATION"
-    | "CONFIRMED"
-    | "PREPARING"
-    | "READY"
-    | "SERVED"
-    | "COMPLETED"
-    | "CANCELLED";
+  | "DRAFT"
+  | "WAITING_CONFIRMATION"
+  | "CONFIRMED"
+  | "PREPARING"
+  | "READY"
+  | "SERVED"
+  | "COMPLETED"
+  | "CANCELLED";

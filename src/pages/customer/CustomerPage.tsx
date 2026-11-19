@@ -15,10 +15,24 @@ import { triggerCallWaiter } from "@/src/services/waiter_request.service";
 import { useCustomerMenu } from "@/src/hooks/useCustomerMenu";
 
 export default function CustomerPage(): React.ReactElement {
-  const { session, menuItems, isLoading, error, reload } = useCustomerMenu();
+  const {
+    session,
+    menuItems,
+    isLoading,
+    error,
+    isSessionExpired,
+    reload,
+    rejoinCurrentSession,
+  } = useCustomerMenu();
   console.log(menuItems);
-  const { cart, removeFromCart, updateCartItemQuantity, clearCart, addToCart } =
-    useCart();
+  const {
+    cart,
+    removeFromCart,
+    updateCartItemQuantity,
+    clearCart,
+    addConfiguredToCart,
+    isCartReady,
+  } = useCart(session?.diningSessionId ?? null);
 
   const [customizingItemId, setCustomizingItemId] = useState<string | null>(
     null,
@@ -40,12 +54,22 @@ export default function CustomerPage(): React.ReactElement {
   );
 
   const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
-  const cartPrice = cart.reduce(
-    (total, item) =>
-      total +
-      (item.menuItem.price + item.addedIngredients.length * 50) * item.quantity,
-    0,
-  );
+  const cartPrice = cart.reduce((total, item) => {
+    const modifierTotal = item.modifiers.reduce(
+      (sum, modifier) => sum + modifier.modifierPrice,
+      0,
+    );
+
+    return total + (item.menuItem.price + modifierTotal) * item.quantity;
+  }, 0);
+
+  const handleRejoinCurrentSession = async () => {
+    // Remove unsubmitted cart items belonging to the old session.
+    clearCart();
+
+    // Explicitly request a fresh dining session.
+    await rejoinCurrentSession();
+  };
 
   if (isLoading) {
     return <CustomerLoadingState />;
@@ -56,21 +80,44 @@ export default function CustomerPage(): React.ReactElement {
       <div className="min-h-screen bg-[#FAF9F6] flex items-center justify-center px-6 text-center">
         <div className="max-w-md card-surface p-8">
           <Sparkles size={20} className="mx-auto text-[#C83214] mb-4" />
+
           <h1 className="text-xl font-display font-black text-[#1F2226]">
-            Menu unavailable
+            {isSessionExpired
+              ? "Your dining session has ended"
+              : "Menu unavailable"}
           </h1>
+
           <p className="text-sm text-[#6B7280] mt-2 leading-relaxed">
-            {error ?? "The table session could not be established."}
+            {isSessionExpired
+              ? "Your previous dining session has ended. A new dining session is available for this table. Join it to continue ordering. Your unsubmitted cart will be cleared."
+              : (error ?? "The table session could not be established.")}
           </p>
-          <button
-            onClick={() => void reload()}
-            className="btn-primary mt-6 mx-auto px-6 py-3 text-xs uppercase tracking-wider"
-          >
-            Try Again
-          </button>
+
+          {isSessionExpired ? (
+            <button
+              onClick={() => void handleRejoinCurrentSession()}
+              disabled={isLoading}
+              className="btn-primary mt-6 mx-auto px-6 py-3 text-xs uppercase tracking-wider disabled:opacity-50"
+            >
+              Join Current Dining Session
+            </button>
+          ) : (
+            <button
+              onClick={() => void reload()}
+              disabled={isLoading}
+              className="btn-primary mt-6 mx-auto px-6 py-3 text-xs uppercase tracking-wider disabled:opacity-50"
+            >
+              Try Again
+            </button>
+          )}
         </div>
       </div>
     );
+  }
+
+  // Wait until the cart for this dining session is restored.
+  if (!isCartReady) {
+    return <CustomerLoadingState />;
   }
 
   const featuredItem =
@@ -229,8 +276,9 @@ export default function CustomerPage(): React.ReactElement {
       {selectedItemToCustomize && (
         <ItemSelectorModal
           item={selectedItemToCustomize}
+          qrToken={session.qrToken}
           onClose={() => setCustomizingItemId(null)}
-          addToCart={addToCart}
+          addConfiguredToCart={addConfiguredToCart}
         />
       )}
 

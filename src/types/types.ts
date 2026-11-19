@@ -1,11 +1,38 @@
 import { MenuItem } from "./menuData";
 
+export interface CartItemModifier {
+  modifierId: string;
+
+  modifierGroupId: string;
+  modifierGroupName: string;
+
+  modifierName: string;
+
+  modifierType: "include" | "exclude";
+
+  // Price snapshot for frontend display.
+  // Laravel recalculates the authoritative price.
+  modifierPrice: number;
+}
+
 export interface CartItem {
-  id: string; // unique ID to support multiple versions of the same item with different ingredient exclusions
+  id: string;
+
   menuItem: MenuItem;
+
   quantity: number;
+
+  // Actual database-backed modifier selections.
+  modifiers: CartItemModifier[];
+
+  // Temporary legacy fields.
+  // We will remove these after updating the modal and drawer.
+  /** @deprecated Use modifiers instead. */
   excludedIngredients: string[];
+
+  /** @deprecated Use modifiers instead. */
   addedIngredients: string[];
+
   customInstructions: string;
 }
 

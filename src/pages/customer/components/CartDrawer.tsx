@@ -584,8 +584,12 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   };
 
   const subtotal = cart.reduce((acc, item) => {
-    const itemExtrasPrice = item.addedIngredients.length * 50; // ₹50 per extra addon
-    return acc + (item.menuItem.price + itemExtrasPrice) * item.quantity;
+    const modifierTotal = item.modifiers.reduce(
+      (sum, modifier) => sum + modifier.modifierPrice,
+      0,
+    );
+
+    return acc + (item.menuItem.price + modifierTotal) * item.quantity;
   }, 0);
 
   // Taxes & Premium hospitality charge (e.g. 18% GST + Service Charge)
@@ -1307,9 +1311,11 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                             </span>
                             <span>
                               ₹
-                              {/*it?.taxableValue*/ (
-                                0 || it.menuItem.price * it.quantity
-                              ).toFixed(2)}
+                              {
+                                /*it?.taxableValue*/ (
+                                  0 || it.menuItem.price * it.quantity
+                                ).toFixed(2)
+                              }
                             </span>
                           </div>
                         ))}
@@ -1433,9 +1439,13 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                   </div>
 
                   {cart.map((item) => {
-                    const itemExtrasPrice = item.addedIngredients.length * 50; // ₹50 each
+                    const itemModifierTotal = item.modifiers.reduce(
+                      (sum, modifier) => sum + modifier.modifierPrice,
+                      0,
+                    );
+
                     const itemSingleTotal =
-                      item.menuItem.price + itemExtrasPrice;
+                      item.menuItem.price + itemModifierTotal;
 
                     return (
                       <motion.div
@@ -1479,30 +1489,31 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                           </div>
 
                           {/* Ingredient modifications */}
-                          {(item.excludedIngredients.length > 0 ||
-                            item.addedIngredients.length > 0) && (
-                            <div
-                              className="space-y-0.5 mt-1"
-                              id="customizations-listing"
-                            >
-                              {/* Exclusions */}
-                              {item.excludedIngredients.map((ex) => (
+                          {item.modifiers.length > 0 && (
+                            <div className="space-y-1 mt-2">
+                              {item.modifiers.map((modifier) => (
                                 <div
-                                  key={ex}
-                                  className="text-[9px] font-mono text-[#6B7280] flex items-center gap-1 leading-none line-through decoration-[#E76F51]/50"
+                                  key={modifier.modifierId}
+                                  className="flex items-center justify-between gap-2 text-[9px] font-mono"
                                 >
-                                  <span className="text-[#E76F51]">✕</span> Hold{" "}
-                                  {ex}
-                                </div>
-                              ))}
-                              {/* Adds */}
-                              {item.addedIngredients.map((ad) => (
-                                <div
-                                  key={ad}
-                                  className="text-[9px] font-mono text-emerald-800 flex items-center gap-1 leading-none"
-                                >
-                                  <span className="text-emerald-500">✓</span>{" "}
-                                  Extra {ad} (₹50)
+                                  <span
+                                    className={
+                                      modifier.modifierType === "include"
+                                        ? "text-emerald-800"
+                                        : "text-[#6B7280]"
+                                    }
+                                  >
+                                    {modifier.modifierType === "include"
+                                      ? "✓ Add"
+                                      : "✕ Remove"}{" "}
+                                    {modifier.modifierName}
+                                  </span>
+
+                                  <span className="text-[#6B7280]">
+                                    {modifier.modifierPrice === 0
+                                      ? "₹0.00"
+                                      : `₹${modifier.modifierPrice.toFixed(2)}`}
+                                  </span>
                                 </div>
                               ))}
                             </div>

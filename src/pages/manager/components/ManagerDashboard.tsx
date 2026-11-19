@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   DollarSign,
@@ -113,6 +113,17 @@ export const ManagerDashboard: React.FC = () => {
   const { menuItems, addMenuItem, editMenuItem, removeMenuItem } =
     useMenuItems();
 
+  const [isTableSaving, setIsTableSaving] = useState(false);
+
+  // Synchronous guard against repeated submissions.
+  const tableSaveLockRef = useRef(false);
+
+  const [deletingTableIds, setDeletingTableIds] = useState<Set<string>>(
+    new Set(),
+  );
+
+  const deletingTableIdsRef = useRef<Set<string>>(new Set());
+
   const { orders: allOrders } = useOrders();
 
   const navigate = useNavigate();
@@ -161,6 +172,7 @@ export const ManagerDashboard: React.FC = () => {
     useState<RestaurantMenuItem | null>(null);
 
   const [isMenuSaving, setIsMenuSaving] = useState(false);
+  const menuSaveLockRef = useRef(false);
 
   const [menuFormError, setMenuFormError] = useState("");
 
@@ -242,6 +254,7 @@ export const ManagerDashboard: React.FC = () => {
 
   const handleSaveMenuItem = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (menuSaveLockRef.current) return;
     setMenuFormError("");
 
     const itemName = menuForm.itemName.trim();
@@ -338,6 +351,7 @@ export const ManagerDashboard: React.FC = () => {
     }
 
     try {
+      menuSaveLockRef.current = true;
       setIsMenuSaving(true);
 
       /*
@@ -433,6 +447,7 @@ export const ManagerDashboard: React.FC = () => {
 
       setMenuFormError(getApiErrorMessage(error, "Unable to save menu item."));
     } finally {
+      menuSaveLockRef.current = false;
       setIsMenuSaving(false);
     }
   };
@@ -491,12 +506,19 @@ export const ManagerDashboard: React.FC = () => {
   const handleSaveTable = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Block repeated submissions immediately.
+    if (tableSaveLockRef.current) return;
+
     const tableName = tableForm.name.trim();
 
     if (!tableName) {
       triggerToast("Please provide a Table Name or Label.");
       return;
     }
+
+    // Acquire the lock before starting the API request.
+    tableSaveLockRef.current = true;
+    setIsTableSaving(true);
 
     try {
       if (editingTable) {
@@ -540,17 +562,33 @@ export const ManagerDashboard: React.FC = () => {
       triggerToast(
         error instanceof Error ? error.message : "Unable to save table.",
       );
+    } finally {
+      // Always release the lock, including after API failure.
+      tableSaveLockRef.current = false;
+      setIsTableSaving(false);
     }
   };
 
   const handleDeleteTable = async (tbl: RestaurantTable) => {
-    if (
-      !window.confirm(
-        `Are you sure you want to delete ${tbl.name} (Table ${tbl.number})?`,
-      )
-    ) {
+    // Prevent another request for the same table.
+    if (deletingTableIdsRef.current.has(tbl.id)) {
       return;
     }
+
+    const confirmed = window.confirm(
+      `Are you sure you want to delete ${tbl.name} (Table ${tbl.number})?`,
+    );
+
+    if (!confirmed) return;
+
+    // Synchronous lock before starting the request.
+    deletingTableIdsRef.current.add(tbl.id);
+
+    setDeletingTableIds((current) => {
+      const updated = new Set(current);
+      updated.add(tbl.id);
+      return updated;
+    });
 
     try {
       await removeTable(tbl.id);
@@ -566,6 +604,14 @@ export const ManagerDashboard: React.FC = () => {
       triggerToast(
         error instanceof Error ? error.message : "Unable to delete table.",
       );
+    } finally {
+      deletingTableIdsRef.current.delete(tbl.id);
+
+      setDeletingTableIds((current) => {
+        const updated = new Set(current);
+        updated.delete(tbl.id);
+        return updated;
+      });
     }
   };
 
@@ -1454,8 +1500,9 @@ export const ManagerDashboard: React.FC = () => {
 
                     <button
                       type="button"
+                      disabled={isTablesLoading}
                       onClick={() => void refreshTables()}
-                      className="mt-4 btn-outline px-4 py-2 text-xs"
+                      className="mt-4 btn-outline px-4 py-2 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <RefreshCw size={13} className="mr-2 inline-block" />
                       Retry
@@ -1562,14 +1609,19 @@ export const ManagerDashboard: React.FC = () => {
                             </button>
                             <button
                               type="button"
+                              disabled={deletingTableIds.has(tbl.tableObj.id)}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleDeleteTable(tbl.tableObj);
                               }}
                               title="Delete Table"
-                              className="p-1 rounded-md bg-neutral-100 hover:bg-rose-600 hover:text-white text-neutral-600 transition-colors cursor-pointer"
+                              className="p-1 rounded-md bg-neutral-100 hover:bg-rose-600 hover:text-white text-neutral-600 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                              <Trash2 size={11} />
+                              {deletingTableIds.has(tbl.tableObj.id) ? (
+                                <RefreshCw size={11} className="animate-spin" />
+                              ) : (
+                                <Trash2 size={11} />
+                              )}
                             </button>
                           </div>
 
@@ -1660,12 +1712,19 @@ export const ManagerDashboard: React.FC = () => {
                             <Edit3 size={13} /> Edit Config
                           </button>
                           <button
+                            disabled={deletingTableIds.has(
+                              tblDetail.tableObj.id,
+                            )}
                             onClick={() =>
                               handleDeleteTable(tblDetail.tableObj)
                             }
-                            className="px-3 bg-neutral-100 hover:bg-rose-600 hover:text-white text-neutral-700 rounded-xl font-display font-bold text-xs transition-colors cursor-pointer flex items-center justify-center"
+                            className="px-3 bg-neutral-100 hover:bg-rose-600 hover:text-white text-neutral-700 rounded-xl font-display font-bold text-xs transition-colors cursor-pointer flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            <Trash2 size={13} />
+                            {deletingTableIds.has(tblDetail.tableObj.id) ? (
+                              <RefreshCw size={13} className="animate-spin" />
+                            ) : (
+                              <Trash2 size={13} />
+                            )}
                           </button>
                         </div>
 
@@ -2056,8 +2115,9 @@ export const ManagerDashboard: React.FC = () => {
                 </h3>
                 <button
                   type="button"
+                  disabled={isTableSaving}
                   onClick={() => setIsTableModalOpen(false)}
-                  className="p-1 rounded-lg bg-neutral-100 hover:bg-neutral-200 text-neutral-600 cursor-pointer"
+                  className="p-1 rounded-lg bg-neutral-100 hover:bg-neutral-200 text-neutral-600 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <X size={16} />
                 </button>
@@ -2263,16 +2323,22 @@ export const ManagerDashboard: React.FC = () => {
                 <div className="flex justify-end gap-2 pt-3 border-t border-[#ECE7E1]">
                   <button
                     type="button"
+                    disabled={isTableSaving}
                     onClick={() => setIsTableModalOpen(false)}
-                    className="px-4 py-2 rounded-xl text-xs font-bold text-neutral-600 bg-neutral-100 hover:bg-neutral-200 cursor-pointer"
+                    className="px-4 py-2 rounded-xl text-xs font-bold text-neutral-600 bg-neutral-100 hover:bg-neutral-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2 rounded-xl text-xs font-bold text-white bg-[#E76F51] hover:bg-[#d95d3f] cursor-pointer shadow-brilixis-sm"
+                    disabled={isTableSaving}
+                    className="px-5 py-2 rounded-xl text-xs font-bold text-white bg-[#E76F51] hover:bg-[#d95d3f] cursor-pointer shadow-brilixis-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {editingTable ? "Save Changes" : "Create Table"}
+                    {isTableSaving
+                      ? "Saving..."
+                      : editingTable
+                        ? "Save Changes"
+                        : "Create Table"}
                   </button>
                 </div>
               </form>

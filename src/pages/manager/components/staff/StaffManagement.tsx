@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   AlertTriangle,
   Edit3,
@@ -85,6 +91,10 @@ export default function StaffManagement({
     ? ["manager", "waiter", "kitchen"]
     : ["waiter", "kitchen"];
 
+  const staffSaveLockRef = useRef(false);
+  const staffActionLockRef = useRef<string | null>(null);
+  const staffRefreshLockRef = useRef(false);
+
   const [staffMembers, setStaffMembers] = useState<StaffMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -103,6 +113,8 @@ export default function StaffManagement({
   } | null>(null);
 
   const refreshStaff = useCallback(async () => {
+    if (staffRefreshLockRef.current) return;
+    staffRefreshLockRef.current = true;
     setIsLoading(true);
     setLoadError(null);
 
@@ -117,6 +129,7 @@ export default function StaffManagement({
       setLoadError(message);
       console.error("Failed to fetch staff members:", error);
     } finally {
+      staffRefreshLockRef.current = false;
       setIsLoading(false);
     }
   }, []);
@@ -176,6 +189,7 @@ export default function StaffManagement({
 
   const handleSaveStaff = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (staffSaveLockRef.current) return;
     setFormError(null);
 
     const fullname = form.fullname.trim();
@@ -195,6 +209,7 @@ export default function StaffManagement({
     }
 
     try {
+      staffSaveLockRef.current = true;
       setIsSaving(true);
 
       if (editingStaff) {
@@ -237,6 +252,7 @@ export default function StaffManagement({
       setFormError(message);
       console.error("Staff save failed:", error);
     } finally {
+      staffSaveLockRef.current = false;
       setIsSaving(false);
     }
   };
@@ -246,12 +262,14 @@ export default function StaffManagement({
   };
 
   const handleAvailabilityChange = async (member: StaffMember) => {
-    if (member.status !== "ACTIVE" || busyStaffId) return;
+    if (member.status !== "ACTIVE" || staffActionLockRef.current || busyStaffId)
+      return;
 
     const nextStatus: StaffAvailabilityStatus =
       member.availability_status === "AVAILABLE" ? "ON_BREAK" : "AVAILABLE";
 
     try {
+      staffActionLockRef.current = member.id;
       setBusyStaffId(member.id);
       await updateStaffAvailabilityStatus(member.id, nextStatus);
       await refreshStaff();
@@ -266,17 +284,24 @@ export default function StaffManagement({
       onNotify(message);
       console.error("Staff availability update failed:", error);
     } finally {
+      staffActionLockRef.current = null;
       setBusyStaffId(null);
     }
   };
 
   const handleAccountStatusChange = async (member: StaffMember) => {
-    if (!["ACTIVE", "INACTIVE"].includes(member.status) || busyStaffId) return;
+    if (
+      !["ACTIVE", "INACTIVE"].includes(member.status) ||
+      staffActionLockRef.current ||
+      busyStaffId
+    )
+      return;
 
     const nextStatus: "ACTIVE" | "INACTIVE" =
       member.status === "ACTIVE" ? "INACTIVE" : "ACTIVE";
 
     try {
+      staffActionLockRef.current = member.id;
       setBusyStaffId(member.id);
       await updateStaffAccountStatus(member.id, nextStatus);
       await refreshStaff();
@@ -291,15 +316,18 @@ export default function StaffManagement({
       onNotify(message);
       console.error("Staff account-status update failed:", error);
     } finally {
+      staffActionLockRef.current = null;
       setBusyStaffId(null);
     }
   };
 
   const handleDeleteStaff = async (member: StaffMember) => {
+    if (staffActionLockRef.current) return;
     if (busyStaffId) return;
     if (!window.confirm(`Remove staff member "${member.fullname}"?`)) return;
 
     try {
+      staffActionLockRef.current = member.id;
       setBusyStaffId(member.id);
       await removeStaffMember(member.id);
       await refreshStaff();
@@ -312,6 +340,7 @@ export default function StaffManagement({
       onNotify(message);
       console.error("Staff deletion failed:", error);
     } finally {
+      staffActionLockRef.current = null;
       setBusyStaffId(null);
     }
   };
@@ -381,7 +410,8 @@ export default function StaffManagement({
           <button
             type="button"
             onClick={() => void refreshStaff()}
-            className="text-xs font-bold underline"
+            disabled={isLoading}
+            className="text-xs font-bold underline disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Retry
           </button>
@@ -456,7 +486,7 @@ export default function StaffManagement({
                       <button
                         type="button"
                         onClick={() => void handleDeleteStaff(member)}
-                        disabled={isBusy}
+                        disabled={Boolean(busyStaffId)}
                         title="Remove Staff Member"
                         className="p-1.5 rounded-lg bg-neutral-100 hover:bg-rose-600 hover:text-white text-neutral-600 transition-colors cursor-pointer disabled:opacity-50"
                       >
@@ -524,7 +554,9 @@ export default function StaffManagement({
                   <button
                     type="button"
                     onClick={() => void handleAvailabilityChange(member)}
-                    disabled={member.status !== "ACTIVE" || isBusy}
+                    disabled={
+                      member.status !== "ACTIVE" || Boolean(busyStaffId)
+                    }
                     title={
                       member.status !== "ACTIVE"
                         ? "Availability can be changed after the account is active"
@@ -544,7 +576,7 @@ export default function StaffManagement({
                     <button
                       type="button"
                       onClick={() => void handleAccountStatusChange(member)}
-                      disabled={isBusy}
+                      disabled={Boolean(busyStaffId)}
                       className={`py-2 px-3 border rounded-lg text-[9px] uppercase font-mono font-black transition-colors cursor-pointer text-center disabled:opacity-40 ${member.status === "ACTIVE" ? "bg-white hover:bg-rose-50 border-[#E8E5DD] text-rose-700" : "bg-emerald-600 hover:bg-emerald-700 border-emerald-600 text-white"}`}
                     >
                       {member.status === "ACTIVE" ? "Deactivate" : "Activate"}

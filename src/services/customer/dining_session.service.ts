@@ -68,14 +68,32 @@ interface DiningSessionApiResponse {
  */
 export async function enterDiningSession(
   qrToken: string,
+  diningSessionId?: string,
 ): Promise<DiningSessionContext> {
+  // Build the request payload.
+  const requestBody: {
+    qr_token: string;
+    dining_session_id?: number;
+  } = {
+    qr_token: qrToken,
+  };
+
+  // Include the exact session ID when resuming a previous session.
+  if (diningSessionId !== undefined) {
+    const parsedSessionId = Number(diningSessionId);
+
+    if (!Number.isSafeInteger(parsedSessionId) || parsedSessionId <= 0) {
+      throw new Error("Invalid dining session ID.");
+    }
+
+    requestBody.dining_session_id = parsedSessionId;
+  }
+
   const response = await apiRequest<DiningSessionApiResponse>(
     "/api/v1/restaurant/customer/enter-dining-session",
     {
       method: "POST",
-      body: JSON.stringify({
-        qr_token: qrToken,
-      }),
+      body: JSON.stringify(requestBody),
     },
   );
 
@@ -102,6 +120,19 @@ export async function enterDiningSession(
 
   if (!restaurant_name) {
     throw new Error("The restaurant name was not returned by the server.");
+  }
+
+  if (
+    session.id === undefined ||
+    session.id === null ||
+    session.table_id === undefined ||
+    session.table_id === null ||
+    session.restaurant_id === undefined ||
+    session.restaurant_id === null
+  ) {
+    throw new Error(
+      "The dining session information returned by the server is incomplete.",
+    );
   }
 
   return {

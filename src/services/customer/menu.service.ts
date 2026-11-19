@@ -1,5 +1,9 @@
 import { apiRequest } from "../api/client";
-import { MenuItem } from "../../types/menuData";
+import {
+  MenuItem,
+  CustomerMenuItemDetails,
+  CustomerMenuModifierGroup,
+} from "../../types/menuData";
 
 type RawMenuItem = Record<string, unknown>;
 
@@ -66,6 +70,136 @@ export async function getCustomerMenuItems({
     .map(normalizeMenuItem)
     .filter((item): item is MenuItem => item !== null);
 }
+
+interface MenuItemDetailsResponse {
+  success?: boolean;
+  message?: string;
+  data?: Record<string, unknown>;
+}
+
+interface GetCustomerMenuItemDetailsParams {
+  qrToken: string;
+  menuItemId: string;
+}
+
+export async function getCustomerMenuItemDetails({
+  qrToken,
+  menuItemId,
+}: GetCustomerMenuItemDetailsParams): Promise<CustomerMenuItemDetails> {
+  const response = await apiRequest<MenuItemDetailsResponse>(
+    `/api/v1/customer/menu-item/items/${encodeURIComponent(menuItemId)}`,
+    {
+      method: "GET",
+      query: {
+        qr_token: qrToken,
+      },
+    },
+  );
+
+  if (!response.success || !isRecord(response.data)) {
+    throw new Error(response.message || "Unable to fetch menu item details.");
+  }
+
+  const rawItem = response.data;
+
+  const itemId = idValue(rawItem.id);
+
+  const basePrice = numberValue(rawItem.base_price);
+
+  if (basePrice === undefined || basePrice < 0) {
+    throw new Error("Invalid menu item price returned by the server.");
+  }
+
+  if (!itemId) {
+    throw new Error("Invalid menu item returned by the server.");
+  }
+
+  const assignments = rawItem.modifier_group_assignments;
+
+  const modifierGroups: CustomerMenuModifierGroup[] = [];
+
+  if (Array.isArray(assignments)) {
+    for (const assignment of assignments) {
+      if (!isRecord(assignment)) continue;
+
+      const group = assignment.modifier_group;
+
+      if (!isRecord(group)) continue;
+
+      const groupId = idValue(group.id);
+      const groupName = stringValue(group.name);
+
+      const rawType = group.modifier_type;
+
+      const type: CustomerMenuModifierGroup["type"] =
+        rawType === 1 || rawType === "1" || rawType === "INCLUDE"
+          ? "include"
+          : rawType === 2 || rawType === "2" || rawType === "EXCLUDE"
+            ? "exclude"
+            : (() => {
+                throw new Error(
+                  `Invalid modifier type for group: ${groupName ?? groupId}`,
+                );
+              })();
+
+      const minSelection = numberValue(assignment.min_selection);
+      const maxSelection = numberValue(assignment.max_selection);
+
+      if (
+        !groupId ||
+        !groupName ||
+        minSelection === undefined ||
+        maxSelection === undefined ||
+        minSelection < 0 ||
+        maxSelection < minSelection
+      ) {
+        throw new Error(
+          `Invalid selection configuration for modifier group: ${groupName ?? groupId}`,
+        );
+      }
+
+      const rawModifiers = group.modifiers;
+
+      const modifiers = Array.isArray(rawModifiers)
+        ? rawModifiers.flatMap((rawModifier) => {
+            if (!isRecord(rawModifier)) return [];
+
+            const id = idValue(rawModifier.id);
+            const name = stringValue(rawModifier.name);
+            const price = numberValue(rawModifier.modifier_price);
+
+            if (!id || !name || price === undefined || price < 0) {
+              return [];
+            }
+
+            return [
+              {
+                id,
+                name,
+                price,
+              },
+            ];
+          })
+        : [];
+
+      modifierGroups.push({
+        id: groupId,
+        name: groupName,
+        type,
+        minSelection,
+        maxSelection,
+        modifiers,
+      });
+    }
+  }
+
+  return {
+    id: itemId,
+    basePrice,
+    modifierGroups,
+  };
+}
+
 /**
  * Extract menu items from the response.
  *

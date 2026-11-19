@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { MenuItem } from "../types/menuData";
 
-import { getApiErrorMessage } from "../services/api/client";
+import { ApiError, getApiErrorMessage } from "../services/api/client";
 
 import {
   enterDiningSession,
@@ -18,16 +18,18 @@ import { getTableQrToken } from "../utils/customerQr";
  */
 interface CustomerMenuState {
   qrToken: string | null;
-
   session: DiningSessionContext | null;
-
   menuItems: MenuItem[];
-
   isLoading: boolean;
-
   error: string | null;
-
+  isSessionExpired: boolean;
   reload: () => Promise<void>;
+  rejoinCurrentSession: () => Promise<void>;
+}
+
+// Helper function to get session key name
+function getDiningSessionStorageKey(qrToken: string): string {
+  return `customer:dining-session:${qrToken}`;
 }
 
 /**
@@ -61,6 +63,8 @@ export function useCustomerMenu(): CustomerMenuState {
 
   const [error, setError] = useState<string | null>(null);
 
+  const [isSessionExpired, setIsSessionExpired] = useState<boolean>(false);
+
   /**
    * Loads/reloads the customer's dining context
    * and restaurant menu.
@@ -68,6 +72,7 @@ export function useCustomerMenu(): CustomerMenuState {
   const load = useCallback(async () => {
     setIsLoading(true);
     setError(null);
+    setIsSessionExpired(false);
 
     /*
      * Step 1:
@@ -95,6 +100,9 @@ export function useCustomerMenu(): CustomerMenuState {
       return;
     }
 
+    let savedSessionId: string | null = null;
+    let enteringSession = true;
+
     try {
       /*
        * Step 2:
@@ -108,9 +116,22 @@ export function useCustomerMenu(): CustomerMenuState {
        * tableNumber / tableName
        * restaurantId
        */
-      const diningSession = await enterDiningSession(token);
+      const storageKey = getDiningSessionStorageKey(token);
+
+      savedSessionId = sessionStorage.getItem(storageKey);
+
+      const diningSession = await enterDiningSession(
+        token,
+        savedSessionId ?? undefined,
+      );
+
+      sessionStorage.setItem(storageKey, diningSession.diningSessionId);
 
       setSession(diningSession);
+
+      // Session entry succeeded. Subsequent errors are not
+      // automatically classified as session-expiry errors.
+      enteringSession = false;
 
       /*
        * Step 3:
@@ -135,6 +156,13 @@ export function useCustomerMenu(): CustomerMenuState {
        */
       setMenuItems(items);
     } catch (requestError) {
+      const sessionExpired =
+        enteringSession &&
+        savedSessionId !== null &&
+        requestError instanceof ApiError &&
+        requestError.status === 409;
+
+      setIsSessionExpired(sessionExpired);
       /*
        * Clear previously loaded customer data
        * when the bootstrap process fails.
@@ -153,6 +181,20 @@ export function useCustomerMenu(): CustomerMenuState {
     }
   }, []);
 
+  const rejoinCurrentSession = useCallback(async () => {
+    const token = getTableQrToken();
+
+    if (token) {
+      const storageKey = getDiningSessionStorageKey(token);
+
+      // Clear the previous session only after explicit user action.
+      sessionStorage.removeItem(storageKey);
+    }
+
+    // Bootstrap again without the previous session ID.
+    await load();
+  }, [load]);
+
   /*
    * Automatically bootstrap the customer page
    * when the component mounts.
@@ -163,15 +205,12 @@ export function useCustomerMenu(): CustomerMenuState {
 
   return {
     qrToken,
-
     session,
-
     menuItems,
-
     isLoading,
-
     error,
-
+    isSessionExpired,
     reload: load,
+    rejoinCurrentSession,
   };
 }
