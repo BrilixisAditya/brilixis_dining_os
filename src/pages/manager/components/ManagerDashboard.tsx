@@ -58,7 +58,6 @@ import MenuManagement from "./menu/MenuManagement";
 
 import { MenuItemService } from "@/src/services/menu_item.service";
 import { getApiErrorMessage } from "@/src/services/api/client";
-import useMenuItems from "@/src/hooks/useMenuItems";
 import ModifierManagement from "./modifiers/ModifierManagement";
 import MenuFormModal, { MenuFormState } from "./menu/MenuFormModal";
 import StaffManagement from "./staff/StaffManagement";
@@ -109,9 +108,6 @@ export const ManagerDashboard: React.FC = () => {
     [],
   );
   const { restaurantGstProfile, updateRestaurantGstProfile } = useRestaurant();
-
-  const { menuItems, addMenuItem, editMenuItem, removeMenuItem } =
-    useMenuItems();
 
   const [isTableSaving, setIsTableSaving] = useState(false);
 

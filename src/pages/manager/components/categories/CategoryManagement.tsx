@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import {
   Plus,
   Search,
@@ -37,6 +37,16 @@ const CategoryManagement: React.FC = () => {
   );
   const [isSaving, setIsSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  // Prevents duplicate category save requests.
+  const categorySaveLockRef = useRef(false);
+
+  // Tracks categories currently being deleted.
+  const [deletingCategoryIds, setDeletingCategoryIds] = useState<Set<string>>(
+    new Set(),
+  );
+
+  const deletingCategoryIdsRef = useRef<Set<string>>(new Set());
 
   const filteredCategories = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -79,6 +89,11 @@ const CategoryManagement: React.FC = () => {
   };
 
   const handleDelete = async (category: MenuCategory) => {
+    // Prevent repeated deletion of the same category.
+    if (deletingCategoryIdsRef.current.has(category.id)) {
+      return;
+    }
+
     const confirmed = window.confirm(
       `Are you sure you want to delete "${category.name}"?`,
     );
@@ -87,16 +102,39 @@ const CategoryManagement: React.FC = () => {
       return;
     }
 
+    // Lock this category before starting the API request.
+    deletingCategoryIdsRef.current.add(category.id);
+
+    setDeletingCategoryIds((current) => {
+      const updated = new Set(current);
+      updated.add(category.id);
+      return updated;
+    });
+
     try {
       await removeCategory(category.id);
     } catch {
       // useCategories already handles API error state.
+    } finally {
+      deletingCategoryIdsRef.current.delete(category.id);
+
+      setDeletingCategoryIds((current) => {
+        const updated = new Set(current);
+        updated.delete(category.id);
+        return updated;
+      });
     }
   };
 
   const handleSubmitCategory = async (
     payload: CreateMenuCategoryPayload | UpdateMenuCategoryPayload,
   ) => {
+    if (categorySaveLockRef.current) {
+      return;
+    }
+
+    categorySaveLockRef.current = true;
+
     try {
       setIsSaving(true);
       setFormError(null);
@@ -120,6 +158,7 @@ const CategoryManagement: React.FC = () => {
 
       setFormError(message);
     } finally {
+      categorySaveLockRef.current = false;
       setIsSaving(false);
     }
   };
@@ -228,7 +267,7 @@ const CategoryManagement: React.FC = () => {
             type="button"
             onClick={() => void refreshCategories()}
             disabled={isLoading}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-[#E8E5DD] text-xs font-display font-bold text-[#5C6168] hover:bg-[#FAF9F6] disabled:opacity-50"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-[#E8E5DD] text-xs font-display font-bold text-[#5C6168] hover:bg-[#FAF9F6] disabled:opacity-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <RefreshCw size={13} className={isLoading ? "animate-spin" : ""} />
             Refresh
@@ -262,7 +301,8 @@ const CategoryManagement: React.FC = () => {
           <button
             type="button"
             onClick={() => void refreshCategories()}
-            className="mt-4 px-4 py-2 rounded-xl bg-[#1F2226] text-white text-xs font-display font-bold"
+            disabled={isLoading}
+            className="mt-4 px-4 py-2 rounded-xl bg-[#1F2226] text-white text-xs font-display font-bold disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Retry
           </button>
@@ -284,6 +324,7 @@ const CategoryManagement: React.FC = () => {
 
           <CategoryList
             categories={filteredCategories}
+            deletingCategoryIds={deletingCategoryIds}
             onEdit={handleEdit}
             onDelete={handleDelete}
           />

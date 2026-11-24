@@ -215,7 +215,10 @@ export class MenuItemService {
   /**
    * GET /api/v1/menu-item/items
    */
-  static async getMenuItems(filters: MenuItemListFilters = {}): Promise<{
+  static async getMenuItems(
+    filters: MenuItemListFilters = {},
+    signal?: AbortSignal,
+  ): Promise<{
     items: RestaurantMenuItem[];
     pagination: MenuItemPagination;
   }> {
@@ -223,7 +226,7 @@ export class MenuItemService {
       "/api/v1/menu-item/items",
       {
         method: "GET",
-
+        signal,
         query: {
           search: filters.search,
           category: filters.category,

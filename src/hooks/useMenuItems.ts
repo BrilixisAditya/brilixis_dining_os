@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   CreateMenuItemPayload,
@@ -49,33 +49,87 @@ export default function useMenuItems(): UseMenuItemsReturn {
 
   const [error, setError] = useState<string | null>(null);
 
+  const latestMenuRequestId = useRef(0); // Prevents an older response from updating React state
+  const activeMenuRequestRef = useRef<AbortController | null>(null); // Actually cancels the previous browser request.
+
   const refreshMenuItems = useCallback(
     async (filters: MenuItemListFilters = {}) => {
-      try {
-        setIsLoading(true);
-        setError(null);
+      // Cancel the previous request.
+      activeMenuRequestRef.current?.abort();
 
-        const result = await MenuItemService.getMenuItems(filters);
+      // Create a new request.
+      const controller = new AbortController();
+      activeMenuRequestRef.current = controller;
+
+      // Generate a unique request ID.
+      const requestId = ++latestMenuRequestId.current;
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const result = await MenuItemService.getMenuItems(
+          filters,
+          controller.signal,
+        );
+
+        // Ignore stale or cancelled responses.
+        if (
+          requestId !== latestMenuRequestId.current ||
+          controller.signal.aborted
+        ) {
+          return;
+        }
 
         setMenuItems(result.items);
-
         setPagination(result.pagination);
       } catch (error) {
+        // Ignore stale requests and intentional cancellations.
+        if (
+          requestId !== latestMenuRequestId.current ||
+          controller.signal.aborted
+        ) {
+          return;
+        }
+
         const message = getApiErrorMessage(error, "Unable to load menu items.");
 
         setError(message);
 
         console.error("Failed to fetch restaurant menu items:", error);
       } finally {
-        setIsLoading(false);
+        // Only the latest request can reset loading.
+        if (requestId === latestMenuRequestId.current) {
+          activeMenuRequestRef.current = null;
+          setIsLoading(false);
+        }
       }
     },
     [],
   );
 
+  const invalidateMenuListRequest = useCallback(() => {
+    // Make any currently running GET response stale.
+    latestMenuRequestId.current += 1;
+
+    // Cancel the active GET request.
+    activeMenuRequestRef.current?.abort();
+    activeMenuRequestRef.current = null;
+
+    // No active list request remains.
+    setIsLoading(false);
+  }, []);
+
   useEffect(() => {
-    void refreshMenuItems();
-  }, [refreshMenuItems]);
+    return () => {
+      // Invalidate any pending request.
+      latestMenuRequestId.current += 1;
+
+      // Cancel the active request.
+      activeMenuRequestRef.current?.abort();
+      activeMenuRequestRef.current = null;
+    };
+  }, []);
 
   const addMenuItem = useCallback(
     async (payload: CreateMenuItemPayload): Promise<RestaurantMenuItem> => {
@@ -83,6 +137,8 @@ export default function useMenuItems(): UseMenuItemsReturn {
 
       try {
         const createdMenuItem = await MenuItemService.createMenuItem(payload);
+
+        invalidateMenuListRequest();
 
         setMenuItems((currentItems) => [...currentItems, createdMenuItem]);
 
@@ -105,7 +161,7 @@ export default function useMenuItems(): UseMenuItemsReturn {
         throw error;
       }
     },
-    [],
+    [invalidateMenuListRequest],
   );
 
   const editMenuItem = useCallback(
@@ -120,6 +176,8 @@ export default function useMenuItems(): UseMenuItemsReturn {
           menuItemId,
           payload,
         );
+
+        invalidateMenuListRequest();
 
         setMenuItems((currentItems) =>
           currentItems.map((item) =>
@@ -141,7 +199,7 @@ export default function useMenuItems(): UseMenuItemsReturn {
         throw error;
       }
     },
-    [],
+    [invalidateMenuListRequest],
   );
 
   const removeMenuItem = useCallback(
@@ -150,6 +208,8 @@ export default function useMenuItems(): UseMenuItemsReturn {
 
       try {
         await MenuItemService.deleteMenuItem(menuItemId);
+
+        invalidateMenuListRequest();
 
         setMenuItems((currentItems) =>
           currentItems.filter((item) => item.id !== menuItemId),
@@ -172,7 +232,7 @@ export default function useMenuItems(): UseMenuItemsReturn {
         throw error;
       }
     },
-    [],
+    [invalidateMenuListRequest],
   );
 
   return {

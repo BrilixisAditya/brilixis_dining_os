@@ -5,18 +5,21 @@ import {
   CheckCircle2,
   CircleOff,
   AlertCircle,
+  Loader2,
 } from "lucide-react";
 
 import { MenuCategory } from "@/src/types/types";
 
 interface CategoryListProps {
   categories: MenuCategory[];
+  deletingCategoryIds: Set<string>;
   onEdit: (category: MenuCategory) => void;
   onDelete: (category: MenuCategory) => void;
 }
 
 const CategoryList: React.FC<CategoryListProps> = ({
   categories,
+  deletingCategoryIds,
   onEdit,
   onDelete,
 }) => {
@@ -89,6 +92,7 @@ const CategoryList: React.FC<CategoryListProps> = ({
         <tbody className="divide-y divide-[#F3F0EA]">
           {categories.map((category) => {
             const status = getStatusStyle(category.status);
+            const isDeleting = deletingCategoryIds.has(category.id);
 
             return (
               <tr
@@ -131,7 +135,8 @@ const CategoryList: React.FC<CategoryListProps> = ({
                     <button
                       type="button"
                       onClick={() => onEdit(category)}
-                      className="p-2 rounded-lg border border-[#E8E5DD] text-[#6B7280] hover:text-[#E76F51] hover:border-[#E76F51]/30 hover:bg-[#FAF9F6] transition-colors"
+                      disabled={isDeleting}
+                      className="p-2 rounded-lg border border-[#E8E5DD] text-[#6B7280] hover:text-[#E76F51] hover:border-[#E76F51]/30 hover:bg-[#FAF9F6] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       title="Edit category"
                     >
                       <Edit3 size={13} />
@@ -140,10 +145,15 @@ const CategoryList: React.FC<CategoryListProps> = ({
                     <button
                       type="button"
                       onClick={() => onDelete(category)}
-                      className="p-2 rounded-lg border border-[#E8E5DD] text-[#6B7280] hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 transition-colors"
+                      disabled={isDeleting}
+                      className="p-2 rounded-lg border border-[#E8E5DD] text-[#6B7280] hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       title="Delete category"
                     >
-                      <Trash2 size={13} />
+                      {isDeleting ? (
+                        <Loader2 size={13} className="animate-spin" />
+                      ) : (
+                        <Trash2 size={13} />
+                      )}
                     </button>
                   </div>
                 </td>

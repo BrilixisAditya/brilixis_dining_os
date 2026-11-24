@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Plus, Search, Edit3, Trash2, RefreshCw, Loader2 } from "lucide-react";
 
 import { RestaurantMenuItem } from "@/src/types/types";
@@ -50,7 +50,12 @@ const MenuManagement: React.FC<MenuManagementProps> = ({
 
   const [menuCatFilter, setMenuCatFilter] = useState<string>("all");
 
-  const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
+  // loaders and Set for menu deletion to prevent duplicate deletion and used to add loader state to disabled attribute of button, to not call api request multiple times
+  const [deletingMenuItemIds, setDeletingMenuItemIds] = useState<Set<string>>(
+    new Set(),
+  );
+
+  const deletingMenuItemIdsRef = useRef<Set<string>>(new Set());
 
   /*
   |--------------------------------------------------------------------------
@@ -84,24 +89,36 @@ const MenuManagement: React.FC<MenuManagementProps> = ({
   */
 
   const handleDelete = async (item: RestaurantMenuItem) => {
+    if (deletingMenuItemIdsRef.current.has(item.id)) return;
+    // This prevents repeated deletion of the same menu item while allowing a different menu item to be deleted independently.
+
     const confirmed = window.confirm(
       `Are you sure you want to delete "${item.name}" from the menu?`,
     );
 
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
+
+    deletingMenuItemIdsRef.current.add(item.id);
+
+    setDeletingMenuItemIds((current) => {
+      const updated = new Set(current);
+      updated.add(item.id);
+      return updated;
+    });
 
     try {
-      setIsDeletingId(item.id);
-
       await removeMenuItem(item.id);
     } catch (error) {
       const message = getApiErrorMessage(error, "Unable to delete menu item.");
-
       console.error("Failed to delete menu item:", message);
     } finally {
-      setIsDeletingId(null);
+      deletingMenuItemIdsRef.current.delete(item.id);
+
+      setDeletingMenuItemIds((current) => {
+        const updated = new Set(current);
+        updated.delete(item.id);
+        return updated;
+      });
     }
   };
 
@@ -233,8 +250,16 @@ const MenuManagement: React.FC<MenuManagementProps> = ({
 
           <button
             type="button"
-            onClick={() => void refreshMenuItems()}
-            className="font-bold underline cursor-pointer whitespace-nowrap"
+            onClick={() =>
+              void refreshMenuItems({
+                search: menuSearch.trim() || undefined,
+                category: menuCatFilter !== "all" ? menuCatFilter : undefined,
+                order: "asc",
+                per_page: 20,
+              })
+            }
+            disabled={isLoading}
+            className="font-bold underline cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Retry
           </button>
@@ -312,8 +337,9 @@ const MenuManagement: React.FC<MenuManagementProps> = ({
                   <button
                     type="button"
                     onClick={() => onEdit(item)}
+                    disabled={deletingMenuItemIds.has(item.id)}
                     title="Edit Menu Item"
-                    className="p-1.5 rounded-lg bg-neutral-100 hover:bg-[#E76F51] hover:text-white text-neutral-600 transition-colors cursor-pointer"
+                    className="p-1.5 rounded-lg bg-neutral-100 hover:bg-[#E76F51] hover:text-white text-neutral-600 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Edit3 size={13} />
                   </button>
@@ -321,11 +347,11 @@ const MenuManagement: React.FC<MenuManagementProps> = ({
                   <button
                     type="button"
                     onClick={() => void handleDelete(item)}
-                    disabled={isDeletingId === item.id}
+                    disabled={deletingMenuItemIds.has(item.id)}
                     title="Delete Menu Item"
                     className="p-1.5 rounded-lg bg-neutral-100 hover:bg-rose-600 hover:text-white text-neutral-600 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isDeletingId === item.id ? (
+                    {deletingMenuItemIds.has(item.id) ? (
                       <Loader2 size={13} className="animate-spin" />
                     ) : (
                       <Trash2 size={13} />

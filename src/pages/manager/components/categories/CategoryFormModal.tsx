@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { X, Save, AlertCircle } from "lucide-react";
+import { X, Save, AlertCircle, Loader2 } from "lucide-react";
 
 import {
   CreateMenuCategoryPayload,
@@ -256,9 +256,13 @@ const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
             <button
               type="submit"
               disabled={isSaving || !categoryName.trim()}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#E76F51] text-white text-xs font-display font-bold hover:bg-[#D95D42] disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#E76F51] text-white text-xs font-display font-bold hover:bg-[#D95D42] disabled:opacity-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Save size={13} />
+              {isSaving ? (
+                <Loader2 size={13} className="animate-spin" />
+              ) : (
+                <Save size={13} />
+              )}
 
               {isSaving
                 ? "Saving..."
