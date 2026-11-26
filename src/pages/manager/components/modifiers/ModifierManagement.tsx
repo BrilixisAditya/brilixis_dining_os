@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Layers3, Settings2 } from "lucide-react";
 
 import {
@@ -67,6 +67,16 @@ export default function ModifierManagement() {
 
   const [isSavingGroup, setIsSavingGroup] = useState(false);
 
+  // Prevents duplicate group save requests.
+  const groupSaveLockRef = useRef(false);
+
+  // Tracks modifier groups currently being deleted.
+  const [deletingGroupIds, setDeletingGroupIds] = useState<Set<string>>(
+    new Set(),
+  );
+
+  const deletingGroupIdsRef = useRef<Set<string>>(new Set());
+
   /*
    * ---------------------------------------------------------
    * Modifier modal
@@ -77,6 +87,22 @@ export default function ModifierManagement() {
   const [editingModifier, setEditingModifier] = useState<Modifier | null>(null);
 
   const [isSavingModifier, setIsSavingModifier] = useState(false);
+
+  // Prevents duplicate modifier save requests.
+  const modifierSaveLockRef = useRef(false);
+
+  // Tracks modifiers currently being deleted.
+  const [deletingModifierIds, setDeletingModifierIds] = useState<Set<string>>(
+    new Set(),
+  );
+
+  const deletingModifierIdsRef = useRef<Set<string>>(new Set());
+
+  // Tracks source and destination groups involved in a modifier save.
+  const savingModifierGroupIdsRef = useRef<Set<string>>(new Set());
+
+  // Tracks the parent group of each modifier currently being deleted.
+  const deletingModifierGroupByIdRef = useRef<Map<string, string>>(new Map());
 
   /*
    * ---------------------------------------------------------
@@ -136,7 +162,7 @@ export default function ModifierManagement() {
   };
 
   const handleCloseGroupModal = () => {
-    if (isSavingGroup) {
+    if (groupSaveLockRef.current) {
       return;
     }
 
@@ -147,6 +173,15 @@ export default function ModifierManagement() {
   const handleSaveGroup = async (
     payload: CreateModifierGroupPayload | UpdateModifierGroupPayload,
   ) => {
+    if (groupSaveLockRef.current) return;
+
+    // Don't update a group that is currently being deleted.
+    if (editingGroup && deletingGroupIdsRef.current.has(editingGroup.id)) {
+      return;
+    }
+
+    groupSaveLockRef.current = true;
+
     setIsSavingGroup(true);
 
     try {
@@ -170,23 +205,56 @@ export default function ModifierManagement() {
       setIsGroupModalOpen(false);
       setEditingGroup(null);
     } finally {
+      groupSaveLockRef.current = false;
       setIsSavingGroup(false);
     }
   };
 
   const handleDeleteGroup = async (group: ModifierGroup) => {
+    if (deletingGroupIdsRef.current.has(group.id)) return;
+
+    // Don't delete a group while it or one of its modifiers
+    // is involved in an active save/delete operation.
+    const hasModifierSave = savingModifierGroupIdsRef.current.has(group.id);
+
+    const hasModifierDelete = Array.from(
+      deletingModifierGroupByIdRef.current.values(),
+    ).includes(group.id);
+
+    if (
+      (groupSaveLockRef.current && editingGroup?.id === group.id) ||
+      hasModifierSave ||
+      hasModifierDelete
+    ) {
+      return;
+    }
+
     const confirmed = window.confirm(
       `Are you sure you want to delete modifier group "${group.name}"?`,
     );
 
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
+
+    deletingGroupIdsRef.current.add(group.id);
+
+    setDeletingGroupIds((current) => {
+      const updated = new Set(current);
+      updated.add(group.id);
+      return updated;
+    });
 
     try {
       await removeModifierGroup(group.id);
     } catch {
       // Error is stored by the hook.
+    } finally {
+      deletingGroupIdsRef.current.delete(group.id);
+
+      setDeletingGroupIds((current) => {
+        const updated = new Set(current);
+        updated.delete(group.id);
+        return updated;
+      });
     }
   };
 
@@ -206,7 +274,7 @@ export default function ModifierManagement() {
   };
 
   const handleCloseModifierModal = () => {
-    if (isSavingModifier) {
+    if (modifierSaveLockRef.current) {
       return;
     }
 
@@ -217,7 +285,47 @@ export default function ModifierManagement() {
   const handleSaveModifier = async (
     payload: CreateModifierPayload | UpdateModifierPayload,
   ) => {
+    if (modifierSaveLockRef.current) return;
+
+    const sourceGroupId = editingModifier?.modifierGroupId ?? null;
+
+    const targetGroupId = String(
+      payload.modifier_group_id ?? sourceGroupId ?? selectedGroupId ?? "",
+    );
+
+    // Prevent saving into a group being deleted.
+    if (
+      (sourceGroupId && deletingGroupIdsRef.current.has(sourceGroupId)) ||
+      (targetGroupId && deletingGroupIdsRef.current.has(targetGroupId))
+    ) {
+      return;
+    }
+
+    // Prevent saving a modifier belonging to a group being deleted.
+    if (selectedGroupId && deletingGroupIdsRef.current.has(selectedGroupId)) {
+      return;
+    }
+
+    // Don't update a modifier that is currently being deleted.
+    if (
+      editingModifier &&
+      deletingModifierIdsRef.current.has(editingModifier.id)
+    ) {
+      return;
+    }
+
+    modifierSaveLockRef.current = true;
     setIsSavingModifier(true);
+
+    savingModifierGroupIdsRef.current.clear();
+
+    if (sourceGroupId) {
+      savingModifierGroupIdsRef.current.add(sourceGroupId);
+    }
+
+    if (targetGroupId) {
+      savingModifierGroupIdsRef.current.add(targetGroupId);
+    }
 
     try {
       if (editingModifier) {
@@ -232,23 +340,56 @@ export default function ModifierManagement() {
       setIsModifierModalOpen(false);
       setEditingModifier(null);
     } finally {
+      modifierSaveLockRef.current = false;
+      savingModifierGroupIdsRef.current.clear();
       setIsSavingModifier(false);
     }
   };
 
   const handleDeleteModifier = async (modifier: Modifier) => {
+    if (deletingModifierIdsRef.current.has(modifier.id)) return;
+
+    // Don't delete a modifier while its parent group is being deleted.
+    if (deletingGroupIdsRef.current.has(modifier.modifierGroupId)) {
+      return;
+    }
+
+    if (modifierSaveLockRef.current && editingModifier?.id === modifier.id) {
+      return;
+    }
+
     const confirmed = window.confirm(
       `Are you sure you want to delete modifier "${modifier.name}"?`,
     );
 
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
+
+    deletingModifierIdsRef.current.add(modifier.id);
+
+    deletingModifierGroupByIdRef.current.set(
+      modifier.id,
+      modifier.modifierGroupId,
+    );
+
+    setDeletingModifierIds((current) => {
+      const updated = new Set(current);
+      updated.add(modifier.id);
+      return updated;
+    });
 
     try {
       await removeModifier(modifier.id);
     } catch {
       // Error is stored by the hook.
+    } finally {
+      deletingModifierIdsRef.current.delete(modifier.id);
+      deletingModifierGroupByIdRef.current.delete(modifier.id);
+
+      setDeletingModifierIds((current) => {
+        const updated = new Set(current);
+        updated.delete(modifier.id);
+        return updated;
+      });
     }
   };
 
@@ -283,6 +424,7 @@ export default function ModifierManagement() {
         <ModifierGroupList
           modifierGroups={modifierGroups}
           selectedGroupId={selectedGroupId}
+          deletingGroupIds={deletingGroupIds}
           isLoading={isGroupsLoading}
           error={groupsError}
           onSelectGroup={handleSelectGroup}
@@ -356,7 +498,8 @@ export default function ModifierManagement() {
                   <button
                     type="button"
                     onClick={() => handleOpenEditGroup(selectedGroup)}
-                    className="px-3 py-2 rounded-xl bg-[#FAF9F6] border border-[#E8E5DD] hover:border-[#E76F51] hover:text-[#C83214] text-[10px] font-display font-bold text-[#6B7280] flex items-center justify-center gap-1.5 cursor-pointer transition-all"
+                    disabled={deletingGroupIds.has(selectedGroup.id)}
+                    className="px-3 py-2 rounded-xl bg-[#FAF9F6] border border-[#E8E5DD] hover:border-[#E76F51] hover:text-[#C83214] text-[10px] font-display font-bold text-[#6B7280] flex items-center justify-center gap-1.5 cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Settings2 size={13} />
                     Edit Group
@@ -372,6 +515,12 @@ export default function ModifierManagement() {
                   modifiers={modifiers}
                   isLoading={isModifiersLoading}
                   error={modifiersError}
+                  deletingModifierIds={deletingModifierIds}
+                  isGroupDeleting={
+                    selectedGroupId
+                      ? deletingGroupIds.has(selectedGroupId)
+                      : false
+                  }
                   onAddModifier={handleOpenAddModifier}
                   onEditModifier={handleOpenEditModifier}
                   onDeleteModifier={handleDeleteModifier}

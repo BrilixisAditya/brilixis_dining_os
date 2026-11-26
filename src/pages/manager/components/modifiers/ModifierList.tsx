@@ -1,5 +1,5 @@
 import { createPortal } from "react-dom";
-import { Edit3, MoreVertical, Plus, Trash2 } from "lucide-react";
+import { Edit3, MoreVertical, Plus, Trash2, Loader2 } from "lucide-react";
 
 import { Modifier } from "@/src/types/types";
 import React from "react";
@@ -8,6 +8,8 @@ interface ModifierListProps {
   modifiers: Modifier[];
   isLoading: boolean;
   error: string | null;
+  deletingModifierIds: Set<string>;
+  isGroupDeleting: boolean;
   onAddModifier: () => void;
   onEditModifier: (modifier: Modifier) => void;
   onDeleteModifier: (modifier: Modifier) => void;
@@ -28,6 +30,8 @@ export default function ModifierList({
   modifiers,
   isLoading,
   error,
+  deletingModifierIds,
+  isGroupDeleting,
   onAddModifier,
   onEditModifier,
   onDeleteModifier,
@@ -49,7 +53,8 @@ export default function ModifierList({
         <button
           type="button"
           onClick={onAddModifier}
-          className="bg-[#E76F51] hover:bg-[#d95d3f] text-white px-3.5 py-2 rounded-xl text-[10px] font-display font-bold flex items-center gap-1.5 cursor-pointer shadow-brilixis-sm transition-all whitespace-nowrap"
+          disabled={isGroupDeleting}
+          className="bg-[#E76F51] hover:bg-[#d95d3f] text-white px-3.5 py-2 rounded-xl text-[10px] font-display font-bold flex items-center gap-1.5 cursor-pointer shadow-brilixis-sm transition-all whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Plus size={13} />
           Add Modifier
@@ -90,7 +95,8 @@ export default function ModifierList({
           <button
             type="button"
             onClick={onAddModifier}
-            className="mt-4 text-[10px] font-display font-bold text-[#C83214] hover:text-[#E76F51] cursor-pointer"
+            disabled={isGroupDeleting}
+            className="mt-4 text-[10px] font-display font-bold text-[#C83214] hover:text-[#E76F51] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             + Add Modifier
           </button>
@@ -119,6 +125,8 @@ export default function ModifierList({
                   <ModifierRow
                     key={modifier.id}
                     modifier={modifier}
+                    isDeleting={deletingModifierIds.has(modifier.id)}
+                    isGroupDeleting={isGroupDeleting}
                     onEdit={() => onEditModifier(modifier)}
                     onDelete={() => onDeleteModifier(modifier)}
                   />
@@ -135,11 +143,19 @@ export default function ModifierList({
 // Modifier Row
 interface ModifierRowProps {
   modifier: Modifier;
+  isDeleting: boolean;
+  isGroupDeleting: boolean;
   onEdit: () => void;
   onDelete: () => void;
 }
 
-function ModifierRow({ modifier, onEdit, onDelete }: ModifierRowProps) {
+function ModifierRow({
+  modifier,
+  isDeleting,
+  isGroupDeleting,
+  onEdit,
+  onDelete,
+}: ModifierRowProps) {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const [menuPosition, setMenuPosition] = React.useState({
     top: 0,
@@ -240,15 +256,22 @@ function ModifierRow({ modifier, onEdit, onDelete }: ModifierRowProps) {
                 openMenu();
               }
             }}
+            disabled={isDeleting || isGroupDeleting}
             className="p-1.5 rounded-lg bg-neutral-100 hover:bg-neutral-200 text-neutral-600 cursor-pointer"
-            aria-label={`Actions for ${modifier.name}`}
+            aria-label={`Actions for ${modifier.name} disabled:opacity-50 disabled:cursor-not-allowed`}
           >
-            <MoreVertical size={13} />
+            {isDeleting ? (
+              <Loader2 size={13} className="animate-spin" />
+            ) : (
+              <MoreVertical size={13} />
+            )}
           </button>
         </div>
       </td>
 
       {isMenuOpen &&
+        !isDeleting &&
+        !isGroupDeleting &&
         createPortal(
           <div
             className="fixed z-999 w-32 bg-white border border-[#E8E5DD] rounded-xl shadow-lg p-1"
@@ -263,7 +286,8 @@ function ModifierRow({ modifier, onEdit, onDelete }: ModifierRowProps) {
                 closeMenu();
                 onEdit();
               }}
-              className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-[10px] font-display font-bold text-neutral-700 hover:bg-[#FAF9F6] cursor-pointer"
+              disabled={isDeleting || isGroupDeleting}
+              className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-[10px] font-display font-bold text-neutral-700 hover:bg-[#FAF9F6] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Edit3 size={12} />
               Edit
@@ -275,7 +299,8 @@ function ModifierRow({ modifier, onEdit, onDelete }: ModifierRowProps) {
                 closeMenu();
                 onDelete();
               }}
-              className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-[10px] font-display font-bold text-rose-600 hover:bg-rose-50 cursor-pointer"
+              disabled={isDeleting || isGroupDeleting}
+              className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-[10px] font-display font-bold text-rose-600 hover:bg-rose-50 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Trash2 size={12} />
               Delete

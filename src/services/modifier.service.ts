@@ -157,6 +157,7 @@ export class ModifierService {
       status?: 1 | 2 | 3;
       per_page?: number;
     } = {},
+    signal?: AbortSignal,
   ): Promise<{
     modifiers: Modifier[];
     pagination: ModifierPagination;
@@ -165,6 +166,7 @@ export class ModifierService {
       "/api/v1/modifier/modifiers",
       {
         method: "GET",
+        signal,
         query: {
           modifier_group_id: modifierGroupId,
           search: options.search,

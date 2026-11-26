@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { X } from "lucide-react";
+import { X, Loader2 } from "lucide-react";
 
 import {
   CreateModifierGroupPayload,
@@ -68,6 +68,8 @@ export default function ModifierGroupFormModal({
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+
+    if (isSaving) return;
 
     setFormError("");
 
@@ -233,13 +235,18 @@ export default function ModifierGroupFormModal({
             <button
               type="submit"
               disabled={isSaving}
-              className="px-5 py-2 rounded-xl text-xs font-bold text-white bg-[#E76F51] hover:bg-[#d95d3f] cursor-pointer shadow-brilixis-sm disabled:opacity-60 disabled:cursor-not-allowed"
+              className="px-5 py-2 rounded-xl text-xs font-bold text-white bg-[#E76F51] hover:bg-[#d95d3f] cursor-pointer shadow-brilixis-sm disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-2"
             >
-              {isSaving
-                ? "Saving..."
-                : isEditing
-                  ? "Save Changes"
-                  : "Create Group"}
+              {isSaving ? (
+                <>
+                  <Loader2 size={13} className="animate-spin" />
+                  Saving...
+                </>
+              ) : isEditing ? (
+                "Save Changes"
+              ) : (
+                "Create Group"
+              )}
             </button>
           </div>
         </form>

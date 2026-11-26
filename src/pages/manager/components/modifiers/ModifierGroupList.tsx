@@ -1,11 +1,19 @@
 import React, { useMemo, useState } from "react";
-import { Edit3, MoreVertical, Plus, Search, Trash2 } from "lucide-react";
+import {
+  Edit3,
+  MoreVertical,
+  Plus,
+  Search,
+  Trash2,
+  Loader2,
+} from "lucide-react";
 
 import { ModifierGroup } from "@/src/types/types";
 
 interface ModifierGroupListProps {
   modifierGroups: ModifierGroup[];
   selectedGroupId: string | null;
+  deletingGroupIds: Set<string>;
   isLoading: boolean;
   error: string | null;
   onSelectGroup: (group: ModifierGroup) => void;
@@ -17,6 +25,7 @@ interface ModifierGroupListProps {
 export default function ModifierGroupList({
   modifierGroups,
   selectedGroupId,
+  deletingGroupIds,
   isLoading,
   error,
   onSelectGroup,
@@ -128,6 +137,7 @@ export default function ModifierGroupList({
           <div className="space-y-2">
             {filteredGroups.map((group) => {
               const isSelected = selectedGroupId === group.id;
+              const isDeleting = deletingGroupIds.has(group.id);
 
               const modifierTypeLabel =
                 group.modifierType === "include" ? "Include" : "Exclude";
@@ -147,7 +157,8 @@ export default function ModifierGroupList({
                       setOpenMenuId(null);
                       onSelectGroup(group);
                     }}
-                    className="w-full text-left p-4 pr-12 cursor-pointer"
+                    disabled={isDeleting}
+                    className="w-full text-left p-4 pr-12 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <div className="flex items-start gap-3">
                       {/* Selection indicator */}
@@ -206,10 +217,15 @@ export default function ModifierGroupList({
                           current === group.id ? null : group.id,
                         );
                       }}
+                      disabled={isDeleting}
                       className="p-1.5 rounded-lg bg-neutral-100 hover:bg-neutral-200 text-neutral-600 cursor-pointer"
-                      aria-label={`Actions for ${group.name}`}
+                      aria-label={`Actions for ${group.name} disabled:opacity-50 disabled:cursor-not-allowed`}
                     >
-                      <MoreVertical size={13} />
+                      {isDeleting ? (
+                        <Loader2 size={13} className="animate-spin" />
+                      ) : (
+                        <MoreVertical size={13} />
+                      )}
                     </button>
 
                     {openMenuId === group.id && (
@@ -221,7 +237,8 @@ export default function ModifierGroupList({
                             setOpenMenuId(null);
                             onEditGroup(group);
                           }}
-                          className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-[10px] font-display font-bold text-neutral-700 hover:bg-[#FAF9F6] cursor-pointer"
+                          disabled={isDeleting}
+                          className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-[10px] font-display font-bold text-neutral-700 hover:bg-[#FAF9F6] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <Edit3 size={12} />
                           Edit
@@ -234,7 +251,8 @@ export default function ModifierGroupList({
                             setOpenMenuId(null);
                             onDeleteGroup(group);
                           }}
-                          className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-[10px] font-display font-bold text-rose-600 hover:bg-rose-50 cursor-pointer"
+                          disabled={isDeleting}
+                          className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-[10px] font-display font-bold text-rose-600 hover:bg-rose-50 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <Trash2 size={12} />
                           Delete
