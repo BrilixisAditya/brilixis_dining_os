@@ -19,6 +19,7 @@ import {
 import { AuthService } from "../../services/auth.service";
 import { useRestaurant } from "@/src/context/RestaurantContext";
 import { useNavigate } from "react-router-dom";
+import { Validators } from "@/src/utils/validators";
 
 // ⚠️ THIS REGISTER FORM IS FOR RESTAURANT AND MERCHANT OWNERS WHO WANTS TO REGISTER THERE BUSINESS
 
@@ -78,10 +79,10 @@ export const RestaurantRegisterPage = () => {
     }
   };
 
-  const validateCurrentStep = (): boolean => {
+  const validateCurrentStep2 = (): boolean => {
     setErrorMessage("");
     if (currentStep === 1) {
-      if (!formData.restaurantName.trim()) {
+      if (formData.restaurantName.trim().length < 3) {
         setErrorMessage("Please enter your Restaurant Name.");
         return false;
       }
@@ -100,6 +101,57 @@ export const RestaurantRegisterPage = () => {
     } else if (currentStep === 3) {
       if (!formData.city.trim()) {
         setErrorMessage("Please specify your City.");
+        return false;
+      }
+    }
+    return true;
+  };
+
+  // new one
+  const validateCurrentStep = (): boolean => {
+    if (errorMessage.length > 0) setErrorMessage("");
+
+    if (currentStep === 1) {
+      if (formData.restaurantName.trim().length < 3) {
+        setErrorMessage("Please enter your Restaurant Name.");
+        return false;
+      }
+      if (!formData.ownerName.trim()) {
+        setErrorMessage("Please enter the Owner / Proprietor Name.");
+        return false;
+      }
+
+      const isEmailValid = Validators.email(formData.email);
+      if (!isEmailValid.valid) {
+        setErrorMessage(isEmailValid.message);
+        return false;
+      }
+
+      const isPhoneValid = Validators.indianPhone(formData.phone);
+      if (!isPhoneValid.valid) {
+        setErrorMessage(isPhoneValid.message);
+        return false;
+      }
+    } else if (currentStep === 2) {
+      const gstin_validation = Validators.gstin(formData.gstNumber);
+      if (!gstin_validation.valid) {
+        setErrorMessage(gstin_validation.message);
+        return false;
+      }
+
+      const fssai_validation = Validators.fssai(formData.fssaiNumber);
+      if (!fssai_validation.valid) {
+        setErrorMessage(fssai_validation.message);
+        return false;
+      }
+    } else if (currentStep === 3) {
+      if (!formData.city.trim()) {
+        setErrorMessage("Please specify your City.");
+        return false;
+      }
+      const pincode_validation = Validators.pincode(formData.pincode);
+      if (!pincode_validation.valid) {
+        setErrorMessage(pincode_validation.message);
         return false;
       }
     }

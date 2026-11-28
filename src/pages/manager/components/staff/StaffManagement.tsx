@@ -32,6 +32,7 @@ import {
   StaffRole,
 } from "@/src/types/staff";
 import { DemoInvitationDialog } from "@/src/features/user-invitation";
+import { Validators } from "@/src/utils/validators";
 
 interface StaffOrderSummary {
   status: string;
@@ -196,13 +197,33 @@ export default function StaffManagement({
     const email = form.email.trim().toLowerCase();
     const contactNo = form.contact_no.trim();
 
-    if (!fullname || !contactNo || (!editingStaff && !email)) {
-      setFormError(
-        "Please complete the required name, email and phone fields.",
-      );
+    // 1. Validate full name
+    const nameValidation = Validators.required(fullname);
+
+    if (!nameValidation.valid) {
+      setFormError("Please enter staff member's full name.");
       return;
     }
 
+    // 2. Validate phone number (both create and edit)
+    const phoneValidation = Validators.indianPhone(contactNo);
+
+    if (!phoneValidation.valid) {
+      setFormError(phoneValidation.message);
+      return;
+    }
+
+    // 3. Validate email only during staff creation
+    if (!editingStaff) {
+      const emailValidation = Validators.email(email);
+
+      if (!emailValidation.valid) {
+        setFormError(emailValidation.message);
+        return;
+      }
+    }
+
+    // 4. Validate role
     if (!availableRoles.includes(form.role)) {
       setFormError("You cannot assign the selected role.");
       return;
