@@ -97,11 +97,14 @@ function normalizeModifierGroup(group: LaravelModifierGroup): ModifierGroup {
 }
 
 export class ModifierGroupService {
-  static async getModifierGroups(): Promise<ModifierGroup[]> {
+  static async getModifierGroups(
+    signal?: AbortSignal,
+  ): Promise<ModifierGroup[]> {
     const response = await apiRequest<LaravelModifierGroupListResponse>(
       "/api/v1/modifier-group/groups",
       {
         method: "GET",
+        signal,
       },
     );
 
